@@ -21,11 +21,6 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // ============ Custom Business Exceptions ============
-
-    /**
-     * Handle ResourceNotFoundException (404)
-     */
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleResourceNotFoundException(ResourceNotFoundException ex) {
         log.error("Resource not found: {}", ex.getMessage());
@@ -34,9 +29,6 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.notFound(ex.getMessage()));
     }
 
-    /**
-     * Handle BadRequestException (400)
-     */
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ApiResponse<Void>> handleBadRequestException(BadRequestException ex) {
         log.error("Bad request: {}", ex.getMessage());
@@ -45,9 +37,6 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.badRequest(ex.getMessage()));
     }
 
-    /**
-     * Handle DuplicateResourceException (409)
-     */
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ApiResponse<Void>> handleDuplicateResourceException(DuplicateResourceException ex) {
         log.error("Duplicate resource: {}", ex.getMessage());
@@ -56,9 +45,6 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.conflict(ex.getMessage()));
     }
 
-    /**
-     * Handle UnauthorizedException (401)
-     */
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ApiResponse<Void>> handleUnauthorizedException(UnauthorizedException ex) {
         log.error("Unauthorized: {}", ex.getMessage());
@@ -67,9 +53,6 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.unauthorized(ex.getMessage()));
     }
 
-    /**
-     * Handle ForbiddenException (403)
-     */
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<ApiResponse<Void>> handleForbiddenException(ForbiddenException ex) {
         log.error("Forbidden: {}", ex.getMessage());
@@ -78,9 +61,6 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.forbidden(ex.getMessage()));
     }
 
-    /**
-     * Handle all custom BaseException
-     */
     @ExceptionHandler(BaseException.class)
     public ResponseEntity<ApiResponse<Void>> handleBaseException(BaseException ex) {
         log.error("Custom exception: {}", ex.getMessage());
@@ -89,12 +69,6 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ex.getStatusCode(), ex.getMessage()));
     }
 
-    // ============ Validation Exceptions ============
-
-    /**
-     * Handle MethodArgumentNotValidException (Validation errors)
-     * Returns map of field errors for easy Frontend integration
-     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Void>> handleValidationException(MethodArgumentNotValidException ex) {
         log.error("Validation failed: {}", ex.getMessage());
@@ -111,9 +85,6 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.validationError(errors));
     }
 
-    /**
-     * Handle HttpMessageNotReadableException (Invalid JSON format)
-     */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
         log.error("Invalid JSON format: {}", ex.getMessage());
@@ -122,9 +93,6 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.badRequest("Invalid JSON format or malformed request body"));
     }
 
-    /**
-     * Handle MethodArgumentTypeMismatchException (Type conversion errors)
-     */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiResponse<Void>> handleTypeMismatchException(MethodArgumentTypeMismatchException ex) {
         log.error("Type mismatch: {}", ex.getMessage());
@@ -137,11 +105,6 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.badRequest(message));
     }
 
-    // ============ Database Exceptions ============
-
-    /**
-     * Handle DataIntegrityViolationException (Database constraint violations)
-     */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
         log.error("Data integrity violation: {}", ex.getMessage());
@@ -164,9 +127,6 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.badRequest(message));
     }
 
-    /**
-     * Handle general DataAccessException (Database/SQL errors)
-     */
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<ApiResponse<Void>> handleDataAccessException(DataAccessException ex) {
         log.error("Database error: {}", ex.getMessage(), ex);
@@ -175,11 +135,6 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.internalError("Database error occurred. Please try again later."));
     }
 
-    // ============ Generic Exception Handler ============
-
-    /**
-     * Handle all other uncaught exceptions (500)
-     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
         log.error("Unexpected error occurred: {}", ex.getMessage(), ex);
