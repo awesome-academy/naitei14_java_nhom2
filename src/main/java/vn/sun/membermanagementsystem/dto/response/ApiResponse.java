@@ -53,9 +53,6 @@ public class ApiResponse<T> {
                 .build();
     }
 
-    /**
-     * Created response (201)
-     */
     public static <T> ApiResponse<T> created(T data) {
         return ApiResponse.<T>builder()
                 .status(201)
