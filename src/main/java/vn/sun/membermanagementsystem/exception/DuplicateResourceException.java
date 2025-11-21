@@ -2,10 +2,6 @@ package vn.sun.membermanagementsystem.exception;
 
 import org.springframework.http.HttpStatus;
 
-/**
- * Exception thrown when trying to create a resource that already exists
- * HTTP Status: 409 Conflict
- */
 public class DuplicateResourceException extends BaseException {
 
     public DuplicateResourceException(String message) {

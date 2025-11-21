@@ -17,10 +17,6 @@ import vn.sun.membermanagementsystem.exception.*;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Global Exception Handler for all REST endpoints
- * Handles exceptions and returns standardized ApiResponse format
- */
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {

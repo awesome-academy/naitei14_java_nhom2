@@ -1,8 +1,5 @@
 package vn.sun.membermanagementsystem.exception;
 
-/**
- * Base exception for all custom exceptions in the system
- */
 public class BaseException extends RuntimeException {
 
     private final int statusCode;

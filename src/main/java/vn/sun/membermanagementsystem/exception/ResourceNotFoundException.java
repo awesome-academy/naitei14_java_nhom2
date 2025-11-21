@@ -1,11 +1,6 @@
 package vn.sun.membermanagementsystem.exception;
 
 import org.springframework.http.HttpStatus;
-
-/**
- * Exception thrown when a requested resource is not found
- * HTTP Status: 404 Not Found
- */
 public class ResourceNotFoundException extends BaseException {
 
     public ResourceNotFoundException(String message) {
