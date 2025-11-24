@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/admin-layout}">
+
+<head>
+  <title>Projects</title>
+</head>
+
+<body>
+
+<section layout:fragment="content">
+
+  <h1>Project Management</h1>
+
+  <form method="get" class="filter-box">
+    <label>Filter by Team:</label>
+    <select name="teamId" onchange="this.form.submit()">
+      <option value="" th:selected="${selectedTeamId == null}">All Teams</option>
+      <option th:each="team : ${teams}"
+              th:value="${team.id}"
+              th:selected="${selectedTeamId != null and selectedTeamId == team.id}"
+              th:text="${team.name}">
+      </option>
+    </select>
+  </form>
+
+  <table class="table">
+    <thead>
+    <tr>
+      <th>#</th>
+      <th>Name</th>
+      <th>Abbreviation</th>
+      <th>Team</th>
+      <th>Status</th>
+      <th>Start</th>
+      <th>End</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    <tr th:each="project, stat : ${projects}">
+      <td th:text="${stat.index + 1}"></td>
+      <td>
+        <a th:href="@{/admin/projects/{id}(id=${project.id})}"
+           th:text="${project.name}"></a>
+      </td>
+      <td th:text="${project.abbreviation}"></td>
+      <td th:text="${project.team != null ? project.team.name : ''}"></td>
+      <td th:text="${project.status}"></td>
+      <td th:text="${project.startDate}"></td>
+      <td th:text="${project.endDate}"></td>
+    </tr>
+    </tbody>
+  </table>
+
+  <div class="pagination">
+    <a th:if="${projects.hasPrevious()}"
+       th:href="@{/admin/projects(page=${projects.number - 1}, teamId=${selectedTeamId})}">
+      Previous
+    </a>
+
+    <span>Page <span th:text="${projects.number + 1}"></span> /
+                  <span th:text="${projects.totalPages}"></span></span>
+
+    <a th:if="${projects.hasNext()}"
+       th:href="@{/admin/projects(page=${projects.number + 1}, teamId=${selectedTeamId})}">
+      Next
+    </a>
+  </div>
+
+</section>
+
+</body>
+
+</html>
