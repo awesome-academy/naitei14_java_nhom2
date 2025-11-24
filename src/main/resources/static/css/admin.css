@@ -203,3 +203,7 @@ table td {
     padding: 1rem;
     border-bottom: 1px solid #e9ecef;
 }
+
+.filter-box {
+    margin-bottom: 12px;
+}
