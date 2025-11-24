@@ -1,12 +1,21 @@
 package vn.sun.membermanagementsystem.entities;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import vn.sun.membermanagementsystem.enums.UserRole;
+import vn.sun.membermanagementsystem.enums.UserStatus;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "users")
 public class User {
     @Id
@@ -40,11 +49,4 @@ public class User {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    public enum UserRole {
-        ADMIN, MEMBER
-    }
-
-    public enum UserStatus {
-        ACTIVE, INACTIVE
-    }
 }
