@@ -23,6 +23,16 @@
               th:text="${team.name}">
       </option>
     </select>
+    <input type="hidden" name="teamId" th:value="${selectedTeamId}" />
+
+    <label style="margin-left: 20px;">Items per page:</label>
+    <select name="size" onchange="this.form.submit()">
+      <option th:each="pageSize : ${pageSizeOptions}"
+              th:value="${pageSize}"
+              th:selected="${currentPageSize == pageSize}"
+              th:text="${pageSize}">
+      </option>
+    </select>
   </form>
 
   <table class="table">
@@ -40,13 +50,13 @@
 
     <tbody>
     <tr th:each="project, stat : ${projects}">
-      <td th:text="${stat.index + 1}"></td>
+      <td th:text="${projects.number * projects.size + stat.index + 1}"></td>
       <td>
         <a th:href="@{/admin/projects/{id}(id=${project.id})}"
            th:text="${project.name}"></a>
       </td>
       <td th:text="${project.abbreviation}"></td>
-      <td th:text="${project.team != null ? project.team.name : ''}"></td>
+      <td th:text="${project.teamName}"></td>
       <td th:text="${project.status}"></td>
       <td th:text="${project.startDate}"></td>
       <td th:text="${project.endDate}"></td>
@@ -56,16 +66,22 @@
 
   <div class="pagination">
     <a th:if="${projects.hasPrevious()}"
-       th:href="@{/admin/projects(page=${projects.number - 1}, teamId=${selectedTeamId})}">
-      Previous
+       th:href="@{/admin/projects(
+         page=${projects.number - 1},
+         teamId=${selectedTeamId},
+         size=${projects.size}
+       )}"> Previous
     </a>
 
     <span>Page <span th:text="${projects.number + 1}"></span> /
                   <span th:text="${projects.totalPages}"></span></span>
 
     <a th:if="${projects.hasNext()}"
-       th:href="@{/admin/projects(page=${projects.number + 1}, teamId=${selectedTeamId})}">
-      Next
+       th:href="@{/admin/projects(
+         page=${projects.number + 1},
+         teamId=${selectedTeamId},
+         size=${projects.size}
+       )}"> Next
     </a>
   </div>
 

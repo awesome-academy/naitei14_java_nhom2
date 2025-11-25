@@ -15,8 +15,10 @@ import vn.sun.membermanagementsystem.mapper.TeamMapper;
 import vn.sun.membermanagementsystem.repositories.TeamRepository;
 import vn.sun.membermanagementsystem.services.TeamService;
 
+import java.util.Collections;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -49,6 +51,9 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
+    public List<Team> getAllTeams() {
+        List<Team> teams = teamRepository.findAll();
+        return teams != null ? teams : Collections.emptyList();
     @Transactional
     public TeamDTO updateTeam(Long id, UpdateTeamRequest request) {
         log.info("Updating team with ID: {}", id);
@@ -80,6 +85,8 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
+    public Optional<Team> getTeamById(Long id) {
+        return teamRepository.findById(id);
     @Transactional
     public boolean deleteTeam(Long id) {
         log.info("Soft deleting team with ID: {}", id);
@@ -113,12 +120,12 @@ public class TeamServiceImpl implements TeamService {
         log.info("Team detail retrieved successfully for ID: {}", id);
         return detailDTO;
     }
-    
+
     @Override
     @Transactional(readOnly = true)
     public List<TeamDTO> getAllTeams() {
         log.info("Getting all teams");
-        
+
         List<Team> teams = teamRepository.findAllNotDeleted();
         return teamMapper.toDTOList(teams);
     }
