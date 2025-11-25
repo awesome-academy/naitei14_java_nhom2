@@ -2,6 +2,8 @@ package vn.sun.membermanagementsystem.services.impls;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -136,5 +138,24 @@ public class UserServiceImpl implements UserService {
                 });
         
         return userMapper.toSummaryDTO(user);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public Page<UserSummaryDTO> getAllUsersWithPagination(Pageable pageable) {
+        log.info("Getting all users with pagination: page={}, size={}", pageable.getPageNumber(), pageable.getPageSize());
+        
+        Page<User> users = userRepository.findAllNotDeleted(pageable);
+        return users.map(userMapper::toSummaryDTO);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public Page<UserSummaryDTO> searchUsers(String keyword, UserStatus status, UserRole role, Pageable pageable) {
+        log.info("Searching users with keyword={}, status={}, role={}, page={}, size={}", 
+                keyword, status, role, pageable.getPageNumber(), pageable.getPageSize());
+        
+        Page<User> users = userRepository.searchUsers(keyword, status, role, pageable);
+        return users.map(userMapper::toSummaryDTO);
     }
 }
