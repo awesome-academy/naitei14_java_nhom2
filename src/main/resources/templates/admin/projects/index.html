@@ -35,7 +35,7 @@
             <option value="" th:selected="${selectedTeamId == null}">All Teams</option>
             <option th:each="team : ${teams}"
                     th:value="${team.id}"
-                    th:selected="${selectedTeamId != null and selectedSelectedTeamId == team.id}"
+                    th:selected="${selectedTeamId != null and selectedTeamId == team.id}"
                     th:text="${team.name}">
             </option>
           </select>
