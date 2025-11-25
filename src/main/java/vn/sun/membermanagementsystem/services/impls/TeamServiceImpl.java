@@ -30,14 +30,19 @@ public class TeamServiceImpl implements TeamService {
 
     private final TeamRepository teamRepository;
     private final TeamMapper teamMapper;
-    private final TeamMapper teamMapper;
+
+    @Override
+    public Optional<TeamDTO> getTeamById(Long id) {
+        return teamRepository.findById(id)
+                .map(teamMapper::toDTO);
+    }
+
 
     @Override
     public Team getRequiredTeam(Long id) {
         return teamRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
     }
-
 
     @Transactional
     public TeamDTO createTeam(CreateTeamRequest request) {
@@ -60,11 +65,6 @@ public class TeamServiceImpl implements TeamService {
         return teamMapper.toDTO(savedTeam);
     }
 
-    @Override
-    public List<TeamDTO> getAllTeams() {
-        List<Team> teams = teamRepository.findAll();
-        return teamMapper.toDTOList(teams);
-        return teams != null ? teams : Collections.emptyList();
     @Transactional
     public TeamDTO updateTeam(Long id, UpdateTeamRequest request) {
         log.info("Updating team with ID: {}", id);
@@ -94,20 +94,6 @@ public class TeamServiceImpl implements TeamService {
 
         return teamMapper.toDTO(updatedTeam);
     }
-
-    @Override
-    public Optional<TeamDTO> getTeamById(Long id) {
-        return teamRepository.findById(id)
-                .map(teamMapper::toDTO);
-    }
-
-
-    @Override
-    public Team getRequiredTeam(Long id) {
-        return teamRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
-    public Optional<Team> getTeamEntityById(Long id) {
-        return teamRepository.findById(id);
     @Transactional
     public boolean deleteTeam(Long id) {
         log.info("Soft deleting team with ID: {}", id);
@@ -141,7 +127,6 @@ public class TeamServiceImpl implements TeamService {
         log.info("Team detail retrieved successfully for ID: {}", id);
         return detailDTO;
     }
-
 
     @Override
     @Transactional(readOnly = true)

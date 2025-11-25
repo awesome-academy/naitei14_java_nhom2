@@ -11,14 +11,10 @@ import java.util.List;
 import java.util.Optional;
 
 public interface TeamService {
-    List<TeamDTO> getAllTeams();
 
     Optional<TeamDTO> getTeamById(Long id);
 
     Team getRequiredTeam(Long id);
-    Optional<Team> getTeamEntityById(Long id);
-    List<Team> getAllTeams();
-    Optional<Team> getTeamById(Long id);
 
     TeamDTO createTeam(CreateTeamRequest request);
 
