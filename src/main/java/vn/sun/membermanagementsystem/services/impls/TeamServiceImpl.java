@@ -47,7 +47,7 @@ public class TeamServiceImpl implements TeamService {
                 .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
     }
 
-}
+
     @Transactional
     public TeamDTO createTeam(CreateTeamRequest request) {
         log.info("Creating team with name: {}", request.getName());
