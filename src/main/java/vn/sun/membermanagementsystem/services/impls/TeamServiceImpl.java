@@ -4,7 +4,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.sun.membermanagementsystem.dto.request.CreateTeamRequest;
+import vn.sun.membermanagementsystem.dto.request.UpdateTeamRequest;
 import vn.sun.membermanagementsystem.dto.response.TeamDTO;
+import vn.sun.membermanagementsystem.dto.response.TeamDetailDTO;
 import vn.sun.membermanagementsystem.entities.Team;
 import vn.sun.membermanagementsystem.exception.DuplicateResourceException;
 import vn.sun.membermanagementsystem.exception.ResourceNotFoundException;
@@ -24,17 +27,17 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     @Transactional
-    public TeamDTO createTeam(TeamDTO teamDTO) {
-        log.info("Creating team with name: {}", teamDTO.getName());
+    public TeamDTO createTeam(CreateTeamRequest request) {
+        log.info("Creating team with name: {}", request.getName());
 
-        if (teamRepository.existsByNameAndNotDeleted(teamDTO.getName())) {
-            log.error("Team name already exists: {}", teamDTO.getName());
-            throw new DuplicateResourceException("Team name already exists: " + teamDTO.getName());
+        if (teamRepository.existsByNameAndNotDeleted(request.getName())) {
+            log.error("Team name already exists: {}", request.getName());
+            throw new DuplicateResourceException("Team name already exists: " + request.getName());
         }
 
         Team team = new Team();
-        team.setName(teamDTO.getName());
-        team.setDescription(teamDTO.getDescription());
+        team.setName(request.getName());
+        team.setDescription(request.getDescription());
         team.setCreatedAt(LocalDateTime.now());
         team.setUpdatedAt(LocalDateTime.now());
 
@@ -46,7 +49,7 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     @Transactional
-    public TeamDTO updateTeam(Long id, TeamDTO teamDTO) {
+    public TeamDTO updateTeam(Long id, UpdateTeamRequest request) {
         log.info("Updating team with ID: {}", id);
 
         Team team = teamRepository.findByIdAndNotDeleted(id)
@@ -55,15 +58,18 @@ public class TeamServiceImpl implements TeamService {
                     return new ResourceNotFoundException("Team not found with ID: " + id);
                 });
 
-        if (teamDTO.getName() != null && !teamDTO.getName().equals(team.getName())) {
-            if (teamRepository.existsByNameAndNotDeletedAndIdNot(teamDTO.getName(), id)) {
-                log.error("Team name already exists: {}", teamDTO.getName());
-                throw new DuplicateResourceException("Team name already exists: " + teamDTO.getName());
+        if (request.getName() != null && !request.getName().equals(team.getName())) {
+            if (teamRepository.existsByNameAndNotDeletedAndIdNot(request.getName(), id)) {
+                log.error("Team name already exists: {}", request.getName());
+                throw new DuplicateResourceException("Team name already exists: " + request.getName());
             }
-            team.setName(teamDTO.getName());
+            team.setName(request.getName());
         }
 
-        team.setDescription(teamDTO.getDescription());
+        if (request.getDescription() != null) {
+            team.setDescription(request.getDescription());
+        }
+
         team.setUpdatedAt(LocalDateTime.now());
 
         Team updatedTeam = teamRepository.save(team);
@@ -88,5 +94,22 @@ public class TeamServiceImpl implements TeamService {
 
         log.info("Team soft deleted successfully with ID: {}", id);
         return true;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TeamDetailDTO getTeamDetail(Long id) {
+        log.info("Getting team detail with ID: {}", id);
+
+        Team team = teamRepository.findByIdAndNotDeleted(id)
+                .orElseThrow(() -> {
+                    log.error("Team not found with ID: {}", id);
+                    return new ResourceNotFoundException("Team not found with ID: " + id);
+                });
+
+        TeamDetailDTO detailDTO = teamMapper.toDetailDTO(team);
+
+        log.info("Team detail retrieved successfully for ID: {}", id);
+        return detailDTO;
     }
 }
