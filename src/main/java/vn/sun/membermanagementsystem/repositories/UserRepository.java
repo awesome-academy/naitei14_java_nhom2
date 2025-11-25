@@ -32,18 +32,44 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.email = :email AND u.id != :userId AND u.deletedAt IS NULL")
     boolean existsByEmailAndNotDeletedAndIdNot(@Param("email") String email, @Param("userId") Long userId);
     
-    @Query("SELECT u FROM User u WHERE u.deletedAt IS NULL")
+    @Query("SELECT DISTINCT u FROM User u " +
+            "LEFT JOIN FETCH u.teamMemberships tm " +
+            "LEFT JOIN FETCH tm.team t " +
+            "WHERE u.deletedAt IS NULL " +
+            "AND (tm IS NULL OR (tm.status = 'ACTIVE' AND tm.leftAt IS NULL AND t.deletedAt IS NULL))")
     Page<User> findAllNotDeleted(Pageable pageable);
     
-    @Query("SELECT u FROM User u WHERE " +
+    @Query("SELECT DISTINCT u FROM User u " +
+            "LEFT JOIN FETCH u.teamMemberships tm " +
+            "LEFT JOIN FETCH tm.team t " +
+            "WHERE " +
             "(:keyword IS NULL OR :keyword = '' OR " +
             "LOWER(u.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
             "(:status IS NULL OR u.status = :status) AND " +
             "(:role IS NULL OR u.role = :role) AND " +
-            "u.deletedAt IS NULL")
+            "u.deletedAt IS NULL AND " +
+            "(tm IS NULL OR (tm.status = 'ACTIVE' AND tm.leftAt IS NULL AND t.deletedAt IS NULL))")
     Page<User> searchUsers(@Param("keyword") String keyword,
                            @Param("status") UserStatus status,
                            @Param("role") UserRole role,
                            Pageable pageable);
+    
+    @Query("SELECT DISTINCT u FROM User u " +
+            "LEFT JOIN FETCH u.teamMemberships tm " +
+            "LEFT JOIN FETCH tm.team t " +
+            "WHERE " +
+            "(:keyword IS NULL OR :keyword = '' OR " +
+            "LOWER(u.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+            "(:status IS NULL OR u.status = :status) AND " +
+            "(:role IS NULL OR u.role = :role) AND " +
+            "(:teamId IS NULL OR (tm.team.id = :teamId AND tm.status = 'ACTIVE' AND tm.leftAt IS NULL)) AND " +
+            "u.deletedAt IS NULL AND " +
+            "(tm IS NULL OR (tm.status = 'ACTIVE' AND tm.leftAt IS NULL AND t.deletedAt IS NULL))")
+    Page<User> searchUsersWithTeam(@Param("keyword") String keyword,
+                                   @Param("status") UserStatus status,
+                                   @Param("role") UserRole role,
+                                   @Param("teamId") Long teamId,
+                                   Pageable pageable);
 }

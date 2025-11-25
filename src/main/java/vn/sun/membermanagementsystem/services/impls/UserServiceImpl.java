@@ -21,7 +21,6 @@ import vn.sun.membermanagementsystem.services.UserService;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -156,6 +155,16 @@ public class UserServiceImpl implements UserService {
                 keyword, status, role, pageable.getPageNumber(), pageable.getPageSize());
         
         Page<User> users = userRepository.searchUsers(keyword, status, role, pageable);
+        return users.map(userMapper::toSummaryDTO);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public Page<UserSummaryDTO> searchUsersWithTeam(String keyword, UserStatus status, UserRole role, Long teamId, Pageable pageable) {
+        log.info("Searching users with keyword={}, status={}, role={}, teamId={}, page={}, size={}", 
+                keyword, status, role, teamId, pageable.getPageNumber(), pageable.getPageSize());
+        
+        Page<User> users = userRepository.searchUsersWithTeam(keyword, status, role, teamId, pageable);
         return users.map(userMapper::toSummaryDTO);
     }
 }

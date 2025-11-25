@@ -23,4 +23,5 @@ public interface UserService {
     
     Page<UserSummaryDTO> getAllUsersWithPagination(Pageable pageable);
     Page<UserSummaryDTO> searchUsers(String keyword, UserStatus status, UserRole role, Pageable pageable);
+    Page<UserSummaryDTO> searchUsersWithTeam(String keyword, UserStatus status, UserRole role, Long teamId, Pageable pageable);
 }

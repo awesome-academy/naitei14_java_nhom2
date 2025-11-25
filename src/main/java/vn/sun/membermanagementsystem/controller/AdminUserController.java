@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import vn.sun.membermanagementsystem.dto.response.UserSummaryDTO;
 import vn.sun.membermanagementsystem.enums.UserRole;
 import vn.sun.membermanagementsystem.enums.UserStatus;
+import vn.sun.membermanagementsystem.services.TeamService;
 import vn.sun.membermanagementsystem.services.UserService;
 
 @Controller
@@ -19,6 +20,7 @@ import vn.sun.membermanagementsystem.services.UserService;
 public class AdminUserController {
 
     private final UserService userService;
+    private final TeamService teamService;
 
     @GetMapping("/admin")
     public String dashboard() {
@@ -34,6 +36,7 @@ public class AdminUserController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) UserStatus status,
             @RequestParam(required = false) UserRole role,
+            @RequestParam(required = false) Long teamId,
             Model model) {
         
         Sort sort = sortDir.equalsIgnoreCase("desc") 
@@ -43,8 +46,8 @@ public class AdminUserController {
         Pageable pageable = PageRequest.of(page, size, sort);
         
         Page<UserSummaryDTO> userPage;
-        if (keyword != null || status != null || role != null) {
-            userPage = userService.searchUsers(keyword, status, role, pageable);
+        if (keyword != null || status != null || role != null || teamId != null) {
+            userPage = userService.searchUsersWithTeam(keyword, status, role, teamId, pageable);
         } else {
             userPage = userService.getAllUsersWithPagination(pageable);
         }
@@ -60,8 +63,10 @@ public class AdminUserController {
         model.addAttribute("keyword", keyword);
         model.addAttribute("status", status);
         model.addAttribute("role", role);
+        model.addAttribute("teamId", teamId);
         model.addAttribute("userStatuses", UserStatus.values());
         model.addAttribute("userRoles", UserRole.values());
+        model.addAttribute("teams", teamService.getAllTeams());
         
         return "admin/users";
     }
