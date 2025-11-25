@@ -1,6 +1,5 @@
 package vn.sun.membermanagementsystem.services.impls;
 
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,7 +25,7 @@ public class ProjectServiceImpl implements ProjectService {
         Page<Project> projectsPage;
 
         if (teamId != null) {
-            Team team = teamService.getTeamById(teamId).orElse(null);
+            Team team = teamService.getTeamEntityById(teamId).orElse(null);
 
             if (team == null) {
                 return Page.empty(pageable);

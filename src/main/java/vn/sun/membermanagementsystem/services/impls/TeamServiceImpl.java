@@ -2,11 +2,12 @@ package vn.sun.membermanagementsystem.services.impls;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import vn.sun.membermanagementsystem.dto.response.TeamDTO;
 import vn.sun.membermanagementsystem.entities.Team;
+import vn.sun.membermanagementsystem.mapper.TeamMapper; // Cần inject Mapper
 import vn.sun.membermanagementsystem.repositories.TeamRepository;
 import vn.sun.membermanagementsystem.services.TeamService;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,15 +16,22 @@ import java.util.Optional;
 public class TeamServiceImpl implements TeamService {
 
     private final TeamRepository teamRepository;
+    private final TeamMapper teamMapper;
 
     @Override
-    public List<Team> getAllTeams() {
+    public List<TeamDTO> getAllTeams() {
         List<Team> teams = teamRepository.findAll();
-        return teams != null ? teams : Collections.emptyList();
+        return teamMapper.toDTOList(teams);
     }
 
     @Override
-    public Optional<Team> getTeamById(Long id) {
+    public Optional<TeamDTO> getTeamById(Long id) {
+        return teamRepository.findById(id)
+                .map(teamMapper::toDTO);
+    }
+
+    @Override
+    public Optional<Team> getTeamEntityById(Long id) {
         return teamRepository.findById(id);
     }
 }
