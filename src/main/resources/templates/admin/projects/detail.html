@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/admin-layout}">
+<head>
+  <title layout:title-pattern="Project Details - %s" th:text="${project.name}">Project Detail</title>
+</head>
+<body>
+<section layout:fragment="content">
+
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+      <h1 class="h3 mb-0 text-gray-800">
+        <span th:text="${project.name}">Project Name</span>
+        <small class="text-muted" th:text="'(' + ${project.abbreviation} + ')'"></small>
+      </h1>
+      <div class="mt-2">
+      </div>
+    </div>
+    <div>
+      <a th:href="@{/admin/projects}" class="btn btn-secondary shadow-sm action-btn">
+        <i class="fas fa-arrow-left fa-sm"></i> Back
+      </a>
+      <a th:href="@{/admin/projects/{id}/edit(id=${project.id})}" class="btn btn-primary shadow-sm action-btn ml-2">
+        <i class="fas fa-edit fa-sm"></i> Edit
+      </a>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8">
+
+      <div class="card shadow mb-4">
+        <div class="card-header">
+          <h6>General Information</h6>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6 mb-4">
+              <div class="info-label">Team</div>
+              <div class="info-value" th:text="${project.teamName}">Team Name</div>
+            </div>
+            <div class="col-md-6 mb-4">
+              <div class="info-label">Duration</div>
+              <div class="info-value">
+                <i class="far fa-calendar-alt mr-2"></i>
+                <span th:text="${project.startDate}"></span>
+                <span class="mx-2">→</span>
+                <span th:text="${project.endDate != null ? project.endDate : 'Ongoing'}"></span>
+              </div>
+            </div>
+            <div class="col-md-6 mb-4">
+              <div class="info-label">Created At</div>
+              <div class="info-value" th:text="${#temporals.format(project.createdAt, 'dd-MM-yyyy HH:mm')}"></div>
+            </div>
+            <div class="col-md-6 mb-4">
+              <div class="info-label">Last Updated</div>
+              <div class="info-value" th:text="${#temporals.format(project.updatedAt, 'dd-MM-yyyy HH:mm')}"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h6>Project Members</h6>
+          <span class="badge-count" th:text="${project.members.size()}">0</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0 table-fixed">
+              <colgroup>
+                <col style="width: 35%;">
+                <col style="width: 20%;">
+                <col style="width: 25%;">
+                <col style="width: 20%;">
+              </colgroup>
+              <thead class="thead-light">
+              <tr>
+                <th>Member</th>
+                <th>Joined Date</th>
+                <th>Status</th>
+                <th class="text-center">Actions</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr th:if="${project.members.isEmpty()}">
+                <td colspan="4" class="text-center py-4 text-muted">
+                  <i class="fas fa-users fa-2x mb-2 d-block"></i>
+                  No members assigned yet.
+                </td>
+              </tr>
+              <tr th:each="member : ${project.members}">
+                <td>
+                  <div class="member-info">
+                    <span class="member-name" th:text="${member.userName}">User Name</span>
+                    <span class="member-email" th:text="${member.userEmail}">email@example.com</span>
+                  </div>
+                </td>
+                <td class="align-middle">
+                  <i class="far fa-calendar text-muted mr-1"></i>
+                  <span th:text="${#temporals.format(member.joinedAt, 'dd-MM-yyyy')}"></span>
+                </td>
+                <td class="align-middle">
+                  <span th:class="${member.status == 'ACTIVE' ? 'badge badge-success' : 'badge badge-secondary'}"
+                        th:text="${member.status}">ACTIVE</span>
+                  <small th:if="${member.leftAt != null}" class="d-block text-muted mt-1">
+                    Left: <span th:text="${#temporals.format(member.leftAt, 'dd-MM-yyyy')}"></span>
+                  </small>
+                </td>
+                <td class="align-middle text-center">
+                  <a th:href="@{/admin/users/{id}(id=${member.userId})}"
+                     class="btn btn-sm btn-view action-btn mr-1"
+                     title="View Details">
+                    <i class="fas fa-eye"></i>
+                  </a>
+                  <a th:href="@{/admin/projects/{projectId}/members/{memberId}/remove(projectId=${project.id},memberId=${member.id})}"
+                     class="btn btn-sm btn-delete action-btn"
+                     onclick="return confirm('Are you sure you want to remove this member from the project?');"
+                     title="Remove Member">
+                    <i class="fas fa-trash-alt"></i>
+                  </a>
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow mb-4">
+        <div class="card-header">
+          <h6>Leadership History</h6>
+        </div>
+        <div class="card-body">
+          <div th:if="${project.leadershipHistory.isEmpty()}" class="text-center text-muted py-4">
+            <i class="fas fa-user-tie fa-2x mb-2 d-block"></i>
+            No leadership history recorded.
+          </div>
+
+          <div th:unless="${project.leadershipHistory.isEmpty()}">
+            <div th:each="leader : ${project.leadershipHistory}"
+                 th:class="${leader.current ? 'leadership-item current' : 'leadership-item'}">
+
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <small th:if="${leader.current}" class="text-success font-weight-bold">
+                  <i class="fas fa-check-circle"></i> Current Leader
+                </small>
+                <small th:unless="${leader.current}" class="text-muted font-weight-bold">
+                  <i class="fas fa-history"></i> Former Leader
+                </small>
+                <small class="text-muted">
+                  <span th:text="${#temporals.format(leader.startedAt, 'MMM yyyy')}"></span>
+                  -
+                  <span th:if="${leader.endedAt != null}" th:text="${#temporals.format(leader.endedAt, 'MMM yyyy')}"></span>
+                  <span th:if="${leader.endedAt == null}">Present</span>
+                </small>
+              </div>
+
+              <h6 class="mb-1 text-dark font-weight-bold" th:text="${leader.leaderName}">Leader Name</h6>
+              <small class="text-muted">
+                <i class="fas fa-envelope mr-1"></i>
+                <span th:text="${leader.leaderEmail}">email@example.com</span>
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</body>
+</html>

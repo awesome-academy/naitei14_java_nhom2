@@ -7,9 +7,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import vn.sun.membermanagementsystem.dto.response.ProjectDTO;
+import vn.sun.membermanagementsystem.dto.response.ProjectDetailDTO;
 import vn.sun.membermanagementsystem.services.ProjectService;
 import vn.sun.membermanagementsystem.services.TeamService;
 
@@ -47,5 +49,12 @@ public class AdminProjectController {
         model.addAttribute("pageSizeOptions", PAGE_SIZES);
 
         return "admin/projects/index";
+    }
+
+    @GetMapping("/{id}")
+    public String viewProjectDetail(@PathVariable Long id, Model model) {
+        ProjectDetailDTO project = projectService.getProjectDetail(id);
+        model.addAttribute("project", project);
+        return "admin/projects/detail";
     }
 }
