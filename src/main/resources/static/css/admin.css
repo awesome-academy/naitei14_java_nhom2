@@ -579,3 +579,113 @@ table td {
         justify-content: center;
     }
 }
+
+.card-header-clean {
+    background-color: transparent;
+    border-bottom: 1px solid #f8f9fc;
+    padding-top: 1.2rem;
+    padding-bottom: 1.2rem;
+}
+.info-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+}
+.info-value {
+    font-size: 0.95rem;
+    color: #2c3e50;
+    font-weight: 500;
+}
+.status-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    padding: 1rem 1.5rem;
+}
+.card-header h6 {
+    color: white !important;
+    font-weight: 600;
+    font-size: 1rem;
+    margin: 0;
+}
+.action-btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 6px;
+    transition: all 0.3s;
+}
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.table thead th {
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.table tbody tr {
+    transition: background-color 0.2s;
+}
+.table tbody tr:hover {
+    background-color: #f8f9fc;
+}
+.member-info {
+    display: flex;
+    flex-direction: column;
+}
+.member-name {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.95rem;
+}
+.member-email {
+    color: #6c757d;
+    font-size: 0.85rem;
+}
+.leadership-item {
+    border-left: 3px solid #dee2e6;
+    padding-left: 1rem;
+    margin-bottom: 1.5rem;
+    transition: all 0.3s;
+}
+.leadership-item.current {
+    border-left-color: #28a745;
+    background-color: #f0f9f4;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-left: -1rem;
+    padding-left: 1rem;
+}
+.leadership-item:hover {
+    border-left-color: #667eea;
+}
+.badge-count {
+    background: white;
+    color: #667eea;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+.table-fixed {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.table-fixed td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
