@@ -2,10 +2,15 @@ package vn.sun.membermanagementsystem.services.impls;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.sun.membermanagementsystem.dto.request.CreateSkillRequest;
+import vn.sun.membermanagementsystem.dto.request.UpdateSkillRequest;
 import vn.sun.membermanagementsystem.dto.response.SkillDTO;
 import vn.sun.membermanagementsystem.entities.Skill;
+import vn.sun.membermanagementsystem.exception.DuplicateResourceException;
 import vn.sun.membermanagementsystem.exception.ResourceNotFoundException;
 import vn.sun.membermanagementsystem.mapper.SkillMapper;
 import vn.sun.membermanagementsystem.repositories.SkillRepository;
@@ -48,7 +53,7 @@ public class SkillServiceImpl implements SkillService {
                 .orElseThrow(() -> new ResourceNotFoundException("Skill not found with id: " + id));
         return skillMapper.toDTO(skill);
     }
-    
+
     @Override
     @Transactional
     public SkillDTO createSkill(CreateSkillRequest request) {
