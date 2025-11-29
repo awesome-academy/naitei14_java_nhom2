@@ -226,6 +226,60 @@
     </div>
 </section>
 
+    <!-- Pagination -->
+    <div class="pagination-container" th:if="${totalPages > 1}">
+        <div class="pagination">
+            <!-- First Page -->
+            <a th:href="@{/admin/skills(page=0, size=${currentPageSize}, sortBy=${sortBy}, sortDir=${sortDir})}"
+               class="page-link"
+               th:classappend="${currentPage == 0 ? 'disabled' : ''}"
+               th:aria-disabled="${currentPage == 0}">
+                <i class="fas fa-angle-double-left"></i>
+            </a>
+            
+            <!-- Previous Page -->
+            <a th:href="@{/admin/skills(page=${currentPage - 1}, size=${currentPageSize}, sortBy=${sortBy}, sortDir=${sortDir})}"
+               class="page-link"
+               th:classappend="${currentPage == 0 ? 'disabled' : ''}"
+               th:aria-disabled="${currentPage == 0}">
+                <i class="fas fa-angle-left"></i>
+            </a>
+            
+            <!-- Page Numbers -->
+            <th:block th:each="pageNum : ${#numbers.sequence(0, totalPages - 1)}">
+                <a th:if="${pageNum < 2 || pageNum >= totalPages - 2 || (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)}"
+                   th:href="@{/admin/skills(page=${pageNum}, size=${currentPageSize}, sortBy=${sortBy}, sortDir=${sortDir})}"
+                   class="page-link"
+                   th:classappend="${pageNum == currentPage ? 'active' : ''}"
+                   th:text="${pageNum + 1}">1</a>
+                
+                <span th:if="${pageNum == 2 && currentPage > 3}" class="page-ellipsis">...</span>
+                <span th:if="${pageNum == totalPages - 3 && currentPage < totalPages - 4}" class="page-ellipsis">...</span>
+            </th:block>
+            
+            <!-- Next Page -->
+            <a th:href="@{/admin/skills(page=${currentPage + 1}, size=${currentPageSize}, sortBy=${sortBy}, sortDir=${sortDir})}"
+               class="page-link"
+               th:classappend="${currentPage >= totalPages - 1 ? 'disabled' : ''}"
+               th:aria-disabled="${currentPage >= totalPages - 1}">
+                <i class="fas fa-angle-right"></i>
+            </a>
+            
+            <!-- Last Page -->
+            <a th:href="@{/admin/skills(page=${totalPages - 1}, size=${currentPageSize}, sortBy=${sortBy}, sortDir=${sortDir})}"
+               class="page-link"
+               th:classappend="${currentPage >= totalPages - 1 ? 'disabled' : ''}"
+               th:aria-disabled="${currentPage >= totalPages - 1}">
+                <i class="fas fa-angle-double-right"></i>
+            </a>
+        </div>
+        
+        <div class="pagination-info">
+            Page <strong th:text="${currentPage + 1}">1</strong> of <strong th:text="${totalPages}">10</strong>
+        </div>
+    </div>
+</section>
+
 <th:block layout:fragment="scripts">
     <script th:inline="javascript">
         const csrfToken = /*[[${_csrf.token}]]*/ '';
