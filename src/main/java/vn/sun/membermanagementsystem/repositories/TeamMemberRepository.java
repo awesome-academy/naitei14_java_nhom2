@@ -31,4 +31,12 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
     List<TeamMember> findActiveTeamsByUserIds(@Param("userIds") List<Long> userIds);
 
     boolean existsByUserAndTeamAndStatus(User user, Team team, MembershipStatus status);
+
+    @Query("SELECT tm.user FROM TeamMember tm " +
+            "JOIN tm.team t " +
+            "WHERE t.id = :teamId " +
+            "AND tm.status = vn.sun.membermanagementsystem.enums.MembershipStatus.ACTIVE " +
+            "AND tm.leftAt IS NULL " +
+            "AND t.deletedAt IS NULL")
+    List<User> findActiveUsersByTeamId(@Param("teamId") Long teamId);
 }

@@ -32,7 +32,7 @@ public class Project {
     private ProjectStatus status = ProjectStatus.PLANNING;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "team_id", nullable = true, foreignKey = @ForeignKey(name = "fk_projects_team"))
+    @JoinColumn(name = "team_id", nullable = false, foreignKey = @ForeignKey(name = "fk_projects_team"))
     private Team team;
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)

@@ -22,6 +22,7 @@ public class CreateProjectRequest {
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private LocalDate endDate;
 
+    @NotNull(message = "Team ID is required")
     private Long teamId;
 
     private Long leaderId;

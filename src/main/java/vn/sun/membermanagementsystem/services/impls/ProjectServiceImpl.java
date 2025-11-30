@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import vn.sun.membermanagementsystem.annotation.LogActivity;
 import vn.sun.membermanagementsystem.entities.User;
 
 import vn.sun.membermanagementsystem.dto.request.CreateProjectRequest;
@@ -103,6 +104,11 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
+    @LogActivity(
+            action = "CREATE_PROJECT",
+            entityType = "PROJECT",
+            description = "Create new project"
+    )
     public ProjectDTO createProject(CreateProjectRequest request) {
         Project project = new Project();
         project.setName(request.getName());
