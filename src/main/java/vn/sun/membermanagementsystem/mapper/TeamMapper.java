@@ -2,6 +2,7 @@ package vn.sun.membermanagementsystem.mapper;
 
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import vn.sun.membermanagementsystem.dto.request.CreateTeamRequest;
 import vn.sun.membermanagementsystem.dto.response.TeamDTO;
@@ -19,13 +20,17 @@ public interface TeamMapper {
 
     List<TeamDTO> toDTOList(List<Team> teams);
 
+    @Mapping(target = "currentLeader", ignore = true)
+    @Mapping(target = "members", ignore = true)
+    @Mapping(target = "memberCount", ignore = true)
+    @Mapping(target = "projects", ignore = true)
+    @Mapping(target = "leadershipHistory", ignore = true)
     TeamDetailDTO toDetailDTO(Team team);
 
     Team toEntity(CreateTeamRequest request);
 
     @AfterMapping
     default void populateTeamDetailDTO(@MappingTarget TeamDetailDTO dto, Team team) {
-        // Populate current leader from leadership history
         team.getLeadershipHistory().stream()
                 .filter(lh -> lh.getEndedAt() == null)
                 .findFirst()
@@ -37,14 +42,13 @@ public interface TeamMapper {
                     dto.setCurrentLeader(leaderDTO);
                 });
 
-        // Populate members list
         List<TeamDetailDTO.TeamMemberDTO> memberDTOs = team.getTeamMemberships().stream()
-                .filter(tm -> tm.getLeftAt() == null) // Filter out members who left
+                .filter(tm -> tm.getLeftAt() == null)
                 .map(tm -> TeamDetailDTO.TeamMemberDTO.builder()
                         .userId(tm.getUser().getId())
                         .name(tm.getUser().getName())
                         .email(tm.getUser().getEmail())
-                        .position(null) // Position will be handled separately if needed
+                        .position(null) 
                         .joinedAt(tm.getJoinedAt())
                         .build())
                 .collect(Collectors.toList());
@@ -63,7 +67,6 @@ public interface TeamMapper {
                 .collect(Collectors.toList());
         dto.setProjects(projectDTOs);
 
-        // Populate leadership history
         List<TeamDetailDTO.TeamLeadershipHistoryDTO> historyDTOs = team.getLeadershipHistory().stream()
                 .map(lh -> TeamDetailDTO.TeamLeadershipHistoryDTO.builder()
                         .leaderId(lh.getLeader().getId())

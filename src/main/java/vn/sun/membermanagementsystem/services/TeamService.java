@@ -34,4 +34,10 @@ public interface TeamService {
     TeamStatisticsDTO getTeamStatistics(Long teamId);
 
     List<UserSelectionDTO> getActiveUsersByTeam(Long teamId);
+
+    void addMemberToTeam(Long teamId, Long userId);
+
+    int addMembersToTeam(Long teamId, List<Long> userIds);
+
+    void removeMemberFromTeam(Long teamId, Long userId);
 }

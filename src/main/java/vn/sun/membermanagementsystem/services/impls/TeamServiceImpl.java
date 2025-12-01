@@ -1,7 +1,7 @@
 package vn.sun.membermanagementsystem.services.impls;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -14,13 +14,16 @@ import vn.sun.membermanagementsystem.dto.response.TeamLeaderDTO;
 import vn.sun.membermanagementsystem.dto.response.TeamStatisticsDTO;
 import vn.sun.membermanagementsystem.dto.response.UserSelectionDTO;
 import vn.sun.membermanagementsystem.entities.Team;
-import vn.sun.membermanagementsystem.exception.BadRequestException;
+import vn.sun.membermanagementsystem.entities.TeamMember;
 import vn.sun.membermanagementsystem.entities.User;
+import vn.sun.membermanagementsystem.enums.MembershipStatus;
+import vn.sun.membermanagementsystem.exception.BadRequestException;
 import vn.sun.membermanagementsystem.exception.ResourceNotFoundException;
 import vn.sun.membermanagementsystem.mapper.TeamMapper;
 import vn.sun.membermanagementsystem.exception.DuplicateResourceException;
 import vn.sun.membermanagementsystem.repositories.TeamMemberRepository;
 import vn.sun.membermanagementsystem.repositories.TeamRepository;
+import vn.sun.membermanagementsystem.repositories.UserRepository;
 import vn.sun.membermanagementsystem.services.TeamLeadershipService;
 import vn.sun.membermanagementsystem.services.TeamService;
 
@@ -31,13 +34,26 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class TeamServiceImpl implements TeamService {
 
     private final TeamRepository teamRepository;
     private final TeamMapper teamMapper;
     private final TeamLeadershipService teamLeadershipService;
     private final TeamMemberRepository teamMemberRepository;
+    private final UserRepository userRepository;
+
+    public TeamServiceImpl(
+            TeamRepository teamRepository,
+            TeamMapper teamMapper,
+            @Lazy TeamLeadershipService teamLeadershipService,
+            TeamMemberRepository teamMemberRepository,
+            UserRepository userRepository) {
+        this.teamRepository = teamRepository;
+        this.teamMapper = teamMapper;
+        this.teamLeadershipService = teamLeadershipService;
+        this.teamMemberRepository = teamMemberRepository;
+        this.userRepository = userRepository;
+    }
 
     @Override
     public Optional<TeamDTO> getTeamById(Long id) {
@@ -90,6 +106,10 @@ public class TeamServiceImpl implements TeamService {
     @Transactional
     public TeamDTO updateTeam(Long id, UpdateTeamRequest request) {
         log.info("Updating team with ID: {}", id);
+        log.info("Request data - Name: {}, Description length: {}, LeaderId: {}",
+                request.getName(),
+                request.getDescription() != null ? request.getDescription().length() : 0,
+                request.getLeaderId());
 
         Team team = teamRepository.findByIdAndNotDeleted(id)
                 .orElseThrow(() -> {
@@ -131,34 +151,38 @@ public class TeamServiceImpl implements TeamService {
                     return new ResourceNotFoundException("Team not found with ID: " + id);
                 });
 
-        // Check if team has active members
-        long activeMembersCount = teamRepository.countActiveMembers(id);
-        if (activeMembersCount > 0) {
-            log.error("Cannot delete team with ID {} - has {} active members", id, activeMembersCount);
-            throw new BadRequestException("Cannot delete team with active members. Team has "
-                    + activeMembersCount + " active member(s).");
-        }
-
-        // Check if team has active projects
         boolean hasActiveProjects = teamRepository.hasActiveProjects(id);
         if (hasActiveProjects) {
             log.error("Cannot delete team with ID {} - has active projects", id);
             throw new BadRequestException("Cannot delete team with active projects.");
         }
 
-        // Remove current leader if exists
-        try {
+        TeamLeaderDTO currentLeader = teamLeadershipService.getCurrentLeader(id);
+        if (currentLeader != null) {
             teamLeadershipService.removeLeader(id);
             log.info("Removed leader from team ID: {}", id);
-        } catch (BadRequestException e) {
-            log.debug("No active leader to remove for team ID: {}", id);
+        }
+
+        List<TeamMember> activeMembers = teamMemberRepository.findByTeamIdAndLeftAtIsNull(id);
+        LocalDateTime now = LocalDateTime.now();
+        for (TeamMember member : activeMembers) {
+            member.setLeftAt(now);
+            member.setStatus(MembershipStatus.INACTIVE);
+            teamMemberRepository.save(member);
+            log.info("Removed member {} from team {}", member.getUser().getId(), id);
+        }
+
+        // Rename team with .deleted suffix before soft delete
+        String originalName = team.getName();
+        if (!originalName.endsWith(".deleted")) {
+            team.setName(originalName + ".deleted");
         }
 
         // Perform soft delete
         team.setDeletedAt(LocalDateTime.now());
         teamRepository.save(team);
 
-        log.info("Team soft deleted successfully with ID: {}", id);
+        log.info("Team soft deleted successfully with ID: {}, renamed to: {}", id, team.getName());
         return true;
     }
 
@@ -167,13 +191,19 @@ public class TeamServiceImpl implements TeamService {
     public TeamDetailDTO getTeamDetail(Long id) {
         log.info("Getting team detail with ID: {}", id);
 
-        Team team = teamRepository.findByIdAndNotDeleted(id)
+        Team team = teamRepository.findByIdWithLeadershipHistory(id)
                 .orElseThrow(() -> {
                     log.error("Team not found with ID: {}", id);
                     return new ResourceNotFoundException("Team not found with ID: " + id);
                 });
 
+        team.getTeamMemberships().forEach(tm -> tm.getUser().getName());
+        team.getLeadershipHistory().forEach(lh -> lh.getLeader().getName());
+        team.getProjects().forEach(p -> p.getName());
+
         TeamDetailDTO detailDTO = teamMapper.toDetailDTO(team);
+
+        teamMapper.populateTeamDetailDTO(detailDTO, team);
 
         log.info("Team detail retrieved successfully for ID: {}", id);
         return detailDTO;
@@ -199,7 +229,6 @@ public class TeamServiceImpl implements TeamService {
         return teamPage.map(team -> {
             TeamDTO dto = teamMapper.toDTO(team);
 
-            // Populate current leader from leadership history
             team.getLeadershipHistory().stream()
                     .filter(lh -> lh.getEndedAt() == null)
                     .findFirst()
@@ -211,7 +240,6 @@ public class TeamServiceImpl implements TeamService {
                         dto.setCurrentLeader(leaderDTO);
                     });
 
-            // Populate member count using repository query
             long memberCount = teamRepository.countActiveMembers(team.getId());
             dto.setMemberCount((int) memberCount);
 
@@ -273,6 +301,12 @@ public class TeamServiceImpl implements TeamService {
     private void handleLeaderChange(Long teamId, Long newLeaderId) {
         log.info("Handling leader change for team {}", teamId);
 
+        TeamLeaderDTO currentLeader = teamLeadershipService.getCurrentLeader(teamId);
+        if (currentLeader != null && currentLeader.getUserId().equals(newLeaderId)) {
+            log.info("New leader is same as current leader, skipping change");
+            return;
+        }
+
         try {
             teamLeadershipService.changeLeader(teamId, newLeaderId);
         } catch (BadRequestException e) {
@@ -283,5 +317,133 @@ public class TeamServiceImpl implements TeamService {
                 throw e;
             }
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void addMemberToTeam(Long teamId, Long userId) {
+        log.info("Adding user {} to team {}", userId, teamId);
+
+        Team team = teamRepository.findByIdAndNotDeleted(teamId)
+                .orElseThrow(() -> {
+                    log.error("Team not found with ID: {}", teamId);
+                    return new ResourceNotFoundException("Team not found with ID: " + teamId);
+                });
+
+        User user = userRepository.findByIdAndNotDeleted(userId)
+                .orElseThrow(() -> {
+                    log.error("User not found with ID: {}", userId);
+                    return new ResourceNotFoundException("User not found with ID: " + userId);
+                });
+
+        TeamMember existingMembership = teamMemberRepository.findActiveTeamByUserId(userId);
+        if (existingMembership != null) {
+            if (existingMembership.getTeam().getId().equals(teamId)) {
+                log.warn("User {} is already an active member of team {}", userId, teamId);
+                throw new BadRequestException("User is already a member of this team");
+            } else {
+                log.error("User {} is already an active member of another team", userId);
+                throw new BadRequestException(
+                        "User is already a member of another team. They must leave that team first.");
+            }
+        }
+
+        TeamMember newMembership = new TeamMember();
+        newMembership.setUser(user);
+        newMembership.setTeam(team);
+        newMembership.setStatus(MembershipStatus.ACTIVE);
+        newMembership.setJoinedAt(LocalDateTime.now());
+
+        teamMemberRepository.save(newMembership);
+        log.info("User {} successfully added to team {}", userId, teamId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int addMembersToTeam(Long teamId, List<Long> userIds) {
+        log.info("Adding {} users to team {}", userIds.size(), teamId);
+
+        Team team = teamRepository.findByIdAndNotDeleted(teamId)
+                .orElseThrow(() -> {
+                    log.error("Team not found with ID: {}", teamId);
+                    return new ResourceNotFoundException("Team not found with ID: " + teamId);
+                });
+
+        int addedCount = 0;
+        StringBuilder errors = new StringBuilder();
+
+        for (Long userId : userIds) {
+            try {
+                User user = userRepository.findByIdAndNotDeleted(userId)
+                        .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+
+                TeamMember existingMembership = teamMemberRepository.findActiveTeamByUserId(userId);
+                if (existingMembership != null) {
+                    if (existingMembership.getTeam().getId().equals(teamId)) {
+                        log.warn("User {} is already an active member of team {}", userId, teamId);
+                        errors.append(String.format("%s is already a member; ", user.getName()));
+                        continue;
+                    } else {
+                        log.warn("User {} is already an active member of another team", userId);
+                        errors.append(String.format("%s is in another team; ", user.getName()));
+                        continue;
+                    }
+                }
+
+                TeamMember newMembership = new TeamMember();
+                newMembership.setUser(user);
+                newMembership.setTeam(team);
+                newMembership.setStatus(MembershipStatus.ACTIVE);
+                newMembership.setJoinedAt(LocalDateTime.now());
+
+                teamMemberRepository.save(newMembership);
+                addedCount++;
+                log.info("User {} successfully added to team {}", userId, teamId);
+
+            } catch (ResourceNotFoundException e) {
+                log.warn("User {} not found, skipping", userId);
+                errors.append(String.format("User ID %d not found; ", userId));
+            }
+        }
+
+        if (addedCount == 0 && !userIds.isEmpty()) {
+            throw new BadRequestException("No users were added. " + errors.toString().trim());
+        }
+
+        log.info("Successfully added {} out of {} users to team {}", addedCount, userIds.size(), teamId);
+        return addedCount;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void removeMemberFromTeam(Long teamId, Long userId) {
+        log.info("Removing user {} from team {}", userId, teamId);
+
+        Team team = teamRepository.findByIdAndNotDeleted(teamId)
+                .orElseThrow(() -> {
+                    log.error("Team not found with ID: {}", teamId);
+                    return new ResourceNotFoundException("Team not found with ID: " + teamId);
+                });
+
+        TeamMember membership = teamMemberRepository.findActiveTeamByUserId(userId);
+
+        if (membership == null || !membership.getTeam().getId().equals(teamId)) {
+            log.error("User {} is not an active member of team {}", userId, teamId);
+            throw new BadRequestException("User is not a member of this team");
+        }
+
+        boolean isCurrentLeader = team.getLeadershipHistory().stream()
+                .anyMatch(lh -> lh.getEndedAt() == null && lh.getLeader().getId().equals(userId));
+
+        if (isCurrentLeader) {
+            log.error("Cannot remove user {} because they are the current leader of team {}", userId, teamId);
+            throw new BadRequestException("Cannot remove the current team leader. Please assign a new leader first.");
+        }
+
+        membership.setStatus(MembershipStatus.INACTIVE);
+        membership.setLeftAt(LocalDateTime.now());
+
+        teamMemberRepository.save(membership);
+        log.info("User {} successfully removed from team {}", userId, teamId);
     }
 }
