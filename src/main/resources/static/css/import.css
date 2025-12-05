@@ -202,13 +202,25 @@
 
 /* Import Errors */
 .import-errors {
-    max-height: 200px;
+    max-height: 300px;
     overflow-y: auto;
 }
 
 .import-errors ul {
-    margin: 0;
+    margin: 8px 0 0;
     padding-left: 20px;
+}
+
+.rollback-notice {
+    margin: 8px 0;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.rollback-notice i {
+    margin-right: 6px;
 }
 
 /* Loading */

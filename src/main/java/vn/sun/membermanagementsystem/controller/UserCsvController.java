@@ -100,15 +100,24 @@ public class UserCsvController {
         if (result.hasErrors()) {
             redirectAttributes.addFlashAttribute("importErrors", result.getErrors());
             redirectAttributes.addFlashAttribute("errorCount", result.getErrorCount());
+            
+            if (result.isRolledBack()) {
+                redirectAttributes.addFlashAttribute("rolledBack", true);
+                redirectAttributes.addFlashAttribute("errorMessage",
+                        String.format("Import failed. %d error(s) found. No users were imported. Please fix the errors and try again.",
+                                result.getErrorCount()));
+            }
         }
 
-        redirectAttributes.addFlashAttribute("successCount", result.getSuccessCount());
-        redirectAttributes.addFlashAttribute("totalRows", result.getTotalRows());
+        if (!result.isRolledBack()) {
+            redirectAttributes.addFlashAttribute("successCount", result.getSuccessCount());
+            redirectAttributes.addFlashAttribute("totalRows", result.getTotalRows());
 
-        if (result.getSuccessCount() > 0) {
-            redirectAttributes.addFlashAttribute("successMessage",
-                    String.format("Successfully imported %d of %d users",
-                            result.getSuccessCount(), result.getTotalRows()));
+            if (result.getSuccessCount() > 0) {
+                redirectAttributes.addFlashAttribute("successMessage",
+                        String.format("Successfully imported %d user(s)",
+                                result.getSuccessCount()));
+            }
         }
 
         return "redirect:/admin/users/import";

@@ -14,12 +14,12 @@ import vn.sun.membermanagementsystem.entities.User;
 import vn.sun.membermanagementsystem.entities.UserSkill;
 import vn.sun.membermanagementsystem.enums.UserRole;
 import vn.sun.membermanagementsystem.enums.UserStatus;
-import vn.sun.membermanagementsystem.exception.DuplicateResourceException;
 import vn.sun.membermanagementsystem.repositories.SkillRepository;
 import vn.sun.membermanagementsystem.repositories.UserRepository;
 import vn.sun.membermanagementsystem.services.SkillService;
 import vn.sun.membermanagementsystem.services.UserService;
 import vn.sun.membermanagementsystem.services.csv.AbstractCsvImportService;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -56,7 +56,6 @@ public class UserCsvImportService extends AbstractCsvImportService<User> {
         return validateRowData(data);
     }
 
-    
     private List<String> validateRowData(String[] data) {
         List<String> errors = new ArrayList<>();
 
@@ -76,6 +75,8 @@ public class UserCsvImportService extends AbstractCsvImportService<User> {
             errors.add("Invalid email format");
         } else if (email.length() > 255) {
             errors.add("Email must be less than 255 characters");
+        } else if (userRepository.existsByEmailAndNotDeleted(email)) {
+            errors.add("Email already exists: " + email);
         }
 
         // Validate birthday
@@ -162,7 +163,12 @@ public class UserCsvImportService extends AbstractCsvImportService<User> {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
+    public CsvImportResult<User> importFromCsv(MultipartFile file) {
+        return super.importFromCsv(file);
+    }
+
+    @Override
     protected User processRow(String[] data, int rowNumber, CsvImportResult<User> result) {
         String name = getStringValue(data, COL_NAME);
         String email = getStringValue(data, COL_EMAIL);
@@ -183,24 +189,15 @@ public class UserCsvImportService extends AbstractCsvImportService<User> {
         userCreateDTO.setRole(UserRole.valueOf(roleStr.toUpperCase().trim()));
         userCreateDTO.setStatus(isNotBlank(statusStr) ? UserStatus.valueOf(statusStr.toUpperCase().trim()) : UserStatus.ACTIVE);
 
-        // Process skills 
+        // Process skills
         if (isNotBlank(skillsStr)) {
             List<UserCreateDTO.UserSkillDTO> skillDTOs = processSkillsForDto(skillsStr, rowNumber);
             userCreateDTO.setSkills(skillDTOs);
         }
 
-        try {
-            UserSummaryDTO createdUser = userService.createUser(userCreateDTO);
-            log.info("Row {}: Created user with ID: {} via UserService", rowNumber, createdUser.getId());
-            return userRepository.findByIdAndNotDeleted(createdUser.getId()).orElse(null);
-        } catch (DuplicateResourceException e) {
-            result.addError(rowNumber, "Email", e.getMessage());
-            return null;
-        } catch (Exception e) {
-            result.addError(rowNumber, "Error", "Failed to create user: " + e.getMessage());
-            log.error("Row {}: Failed to create user: {}", rowNumber, e.getMessage());
-            return null;
-        }
+        UserSummaryDTO createdUser = userService.createUser(userCreateDTO);
+        log.info("Row {}: Created user with ID: {} via UserService", rowNumber, createdUser.getId());
+        return userRepository.findByIdAndNotDeleted(createdUser.getId()).orElse(null);
     }
 
     private List<UserCreateDTO.UserSkillDTO> processSkillsForDto(String skillsStr, int rowNumber) {
