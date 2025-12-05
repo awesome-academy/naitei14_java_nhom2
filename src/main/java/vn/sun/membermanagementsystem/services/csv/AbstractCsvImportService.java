@@ -2,6 +2,7 @@ package vn.sun.membermanagementsystem.services.csv;
 
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
+import org.apache.commons.io.input.BOMInputStream;
 import org.springframework.web.multipart.MultipartFile;
 import vn.sun.membermanagementsystem.dto.request.csv.CsvImportResult;
 import vn.sun.membermanagementsystem.dto.request.csv.CsvPreviewResult;
@@ -31,7 +32,7 @@ public abstract class AbstractCsvImportService<T> implements CsvImportService<T>
         }
 
         try (CSVReader reader = new CSVReader(
-                new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+                new InputStreamReader(new BOMInputStream(file.getInputStream()), StandardCharsets.UTF_8))) {
 
             List<String[]> allRows = reader.readAll();
 
@@ -116,7 +117,7 @@ public abstract class AbstractCsvImportService<T> implements CsvImportService<T>
         }
 
         try (CSVReader reader = new CSVReader(
-                new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+                new InputStreamReader(new BOMInputStream(file.getInputStream()), StandardCharsets.UTF_8))) {
 
             List<String[]> allRows = reader.readAll();
 
