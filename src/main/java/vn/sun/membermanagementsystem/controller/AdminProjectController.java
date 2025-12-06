@@ -15,8 +15,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import vn.sun.membermanagementsystem.dto.request.CreateProjectRequest;
 import vn.sun.membermanagementsystem.dto.request.UpdateProjectRequest;
 import vn.sun.membermanagementsystem.dto.response.*;
+import vn.sun.membermanagementsystem.enums.UserStatus;
 import vn.sun.membermanagementsystem.services.ProjectService;
 import vn.sun.membermanagementsystem.services.TeamService;
+import vn.sun.membermanagementsystem.services.UserService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,6 +30,7 @@ public class AdminProjectController {
 
     private final ProjectService projectService;
     private final TeamService teamService;
+    private final UserService userService;
 
     private static final List<Integer> PAGE_SIZES = List.of(10, 25, 50, 100);
 
@@ -68,6 +71,8 @@ public class AdminProjectController {
             model.addAttribute("projectRequest", new CreateProjectRequest());
         }
         model.addAttribute("teams", teamService.getAllTeams());
+        List<UserSummaryDTO> activeUsers = userService.getUsersByStatus(UserStatus.ACTIVE);
+        model.addAttribute("allUsers", activeUsers);
         return "admin/projects/create";
     }
 
@@ -81,7 +86,8 @@ public class AdminProjectController {
         if (result.hasErrors()) {
             model.addAttribute("teams", teamService.getAllTeams());
             if (request.getTeamId() != null) {
-                model.addAttribute("preloadedUsers", teamService.getActiveUsersByTeam(request.getTeamId()));
+                model.addAttribute("teams", teamService.getAllTeams());
+                model.addAttribute("allUsers", userService.getUsersByStatus(UserStatus.ACTIVE));
             }
             return "admin/projects/create";
         }
@@ -93,9 +99,7 @@ public class AdminProjectController {
         } catch (IllegalArgumentException e) {
             result.rejectValue("teamId", "error.projectRequest", e.getMessage());
             model.addAttribute("teams", teamService.getAllTeams());
-            if (request.getTeamId() != null) {
-                model.addAttribute("preloadedUsers", teamService.getActiveUsersByTeam(request.getTeamId()));
-            }
+            model.addAttribute("allUsers", userService.getUsersByStatus(UserStatus.ACTIVE));
             return "admin/projects/create";
         }
     }

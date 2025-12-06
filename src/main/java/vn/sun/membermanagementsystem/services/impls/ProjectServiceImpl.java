@@ -62,9 +62,14 @@ public class ProjectServiceImpl implements ProjectService {
         project.setEndDate(request.getEndDate());
         project.setStatus(Project.ProjectStatus.PLANNING);
 
+        if (request.getTeamId() != null) {
+            Team team = teamService.getRequiredTeam(request.getTeamId());
+            project.setTeam(team);
+        }
+
         project = projectRepo.save(project);
 
-        handleProjectContext(project, request.getTeamId(), request.getLeaderId(), request.getMemberIds());
+        handleProjectContextMembersOnly(project, request.getLeaderId(), request.getMemberIds());
 
         return projectMapper.toDTO(project);
     }
@@ -83,32 +88,18 @@ public class ProjectServiceImpl implements ProjectService {
 
         project = projectRepo.save(project);
 
-        handleProjectContext(project, request.getTeamId(), request.getLeaderId(), request.getMemberIds());
-
+        handleProjectContextMembersOnly(project, request.getLeaderId(), request.getMemberIds());
         return projectMapper.toDTO(project);
     }
 
-    private void handleProjectContext(Project project, Long teamId, Long leaderId, List<Long> memberIds) {
-        Team oldTeam = project.getTeam();
-        Team newTeam = teamId != null ? teamService.getRequiredTeam(teamId) : null;
+    private void handleProjectContextMembersOnly(Project project, Long leaderId, List<Long> memberIds) {
+        Team currentTeam = project.getTeam();
 
-        if (!Objects.equals(oldTeam, newTeam)) {
-            if (oldTeam != null && newTeam == null) {
-                leadershipService.endAllLeadership(project);
-                membershipService.removeAllMembers(project);
-                project.setTeam(null);
-            } else {
-                project.setTeam(newTeam);
-            }
-            project = projectRepo.save(project);
-        }
-
-        membershipService.syncMembers(project, memberIds, leaderId, newTeam);
-
-        leadershipService.updateLeader(project, leaderId, newTeam);
+        membershipService.syncMembers(project, memberIds, leaderId, currentTeam);
+        leadershipService.updateLeader(project, leaderId, currentTeam);
 
         if (leaderId != null) {
-            membershipService.ensureUserIsActiveMember(project, leaderId, newTeam);
+            membershipService.ensureUserIsActiveMember(project, leaderId, currentTeam);
         }
     }
 

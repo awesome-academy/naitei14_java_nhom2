@@ -83,9 +83,6 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
     @Override
     @Transactional
     public void ensureUserIsActiveMember(Project project, User user, Team team) {
-        if (team != null && !teamMemberRepo.existsByUserAndTeamAndStatus(user, team, MembershipStatus.ACTIVE)) {
-            throw new IllegalArgumentException("User " + user.getName() + " is not active in this team");
-        }
 
         ProjectMember pm = projectMemberRepo.findByProjectAndUser(project, user).orElse(null);
 
