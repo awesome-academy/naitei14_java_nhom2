@@ -14,9 +14,13 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import vn.sun.membermanagementsystem.dto.request.csv.CsvImportResult;
 import vn.sun.membermanagementsystem.dto.request.csv.CsvPreviewResult;
 import vn.sun.membermanagementsystem.entities.Position;
+import vn.sun.membermanagementsystem.services.csv.impls.PositionCsvExportService;
 import vn.sun.membermanagementsystem.services.csv.impls.PositionCsvImportService;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Slf4j
 @Controller
@@ -25,6 +29,20 @@ import java.nio.charset.StandardCharsets;
 public class PositionCsvController {
 
     private final PositionCsvImportService positionCsvImportService;
+    private final PositionCsvExportService positionCsvExportService;
+
+    @GetMapping("/export")
+    public void exportPositions(HttpServletResponse response) throws IOException {
+        log.info("Exporting positions to CSV");
+
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String filename = "positions_export_" + timestamp + ".csv";
+
+        response.setContentType("text/csv; charset=UTF-8");
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"");
+
+        positionCsvExportService.exportToCsv(response.getOutputStream());
+    }
 
     @GetMapping("/import")
     public String showImportPage(Model model) {
