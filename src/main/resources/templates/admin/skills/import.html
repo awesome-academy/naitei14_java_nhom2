@@ -5,16 +5,16 @@
   layout:decorate="~{layouts/admin-layout}"
 >
   <head>
-    <title layout:title-pattern="Import Users - %s">Import Users</title>
+    <title layout:title-pattern="Import Skills - %s">Import Skills</title>
     <link th:href="@{/css/import.css}" rel="stylesheet" />
   </head>
   <body>
     <section layout:fragment="content">
       <div class="content-header">
-        <h1>Import Users</h1>
+        <h1>Import Skills</h1>
         <div class="header-actions">
-          <a th:href="@{/admin/users}" class="btn btn-outline">
-            <i class="fas fa-arrow-left"></i> Back to Users
+          <a th:href="@{/admin/skills}" class="btn btn-outline">
+            <i class="fas fa-arrow-left"></i> Back to Skills
           </a>
         </div>
       </div>
@@ -34,7 +34,7 @@
         <div th:if="${importErrors}" class="alert alert-danger import-errors">
           <strong><i class="fas fa-exclamation-triangle"></i> Import Errors:</strong>
           <p th:if="${rolledBack}" class="rollback-notice">
-            <i class="fas fa-undo"></i> All changes have been rolled back. No users were imported.
+            <i class="fas fa-undo"></i> All changes have been rolled back. No skills were imported.
           </p>
           <ul>
             <li th:each="error : ${importErrors}" th:text="${error}"></li>
@@ -49,31 +49,35 @@
             <ul>
               <li>File must be in CSV format (.csv)</li>
               <li>
-                Required columns: <code>Name</code>, <code>Email</code>,
-                <code>Role</code>
+                Required columns: <code>Name</code>
               </li>
               <li>
-                Optional columns: <code>Birthday</code> (yyyy-MM-dd),
-                <code>Status</code>, <code>Skills</code>
+                Optional columns: <code>Description</code>
               </li>
-              <li>Role must be: <code>ADMIN</code> or <code>MEMBER</code></li>
-              <li>
-                Status must be: <code>ACTIVE</code> or <code>INACTIVE</code>
-                (default: ACTIVE)
-              </li>
-              <li>
-                Skills format:
-                <code>SkillName:Level:Years|SkillName2:Level2:Years2</code>
-              </li>
-              <li>
-                Skill levels: <code>BEGINNER</code>, <code>INTERMEDIATE</code>,
-                <code>ADVANCED</code>, <code>EXPERT</code>
-              </li>
-              <li>Default password for imported users: <code>123456</code></li>
+              <li>Name must be unique and less than 255 characters</li>
             </ul>
+            <h4 style="margin-top: 16px;">Example:</h4>
+            <table class="example-table" style="margin-top: 8px; border-collapse: collapse;">
+              <thead>
+                <tr>
+                  <th style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5;">Name</th>
+                  <th style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5;">Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="border: 1px solid #ddd; padding: 8px;">Java</td>
+                  <td style="border: 1px solid #ddd; padding: 8px;">Programming language for enterprise applications</td>
+                </tr>
+                <tr>
+                  <td style="border: 1px solid #ddd; padding: 8px;">React</td>
+                  <td style="border: 1px solid #ddd; padding: 8px;">JavaScript library for building user interfaces</td>
+                </tr>
+              </tbody>
+            </table>
             <div style="margin-top: 16px">
               <a
-                th:href="@{/admin/users/import/template}"
+                th:href="@{/admin/skills/import/template}"
                 class="btn btn-outline"
               >
                 <i class="fas fa-download"></i> Download Sample Template
@@ -87,7 +91,7 @@
           <h3><i class="fas fa-upload"></i> Upload CSV File</h3>
           <form
             id="importForm"
-            th:action="@{/admin/users/import}"
+            th:action="@{/admin/skills/import}"
             method="post"
             enctype="multipart/form-data"
           >
@@ -129,7 +133,7 @@
                 class="btn btn-primary"
                 disabled
               >
-                <i class="fas fa-file-import"></i> Import Users
+                <i class="fas fa-file-import"></i> Import Skills
               </button>
             </div>
           </form>
@@ -220,7 +224,7 @@
 
           try {
             const response = await fetch(
-              "/admin/users/import/preview",
+              /*[[@{/admin/skills/import/preview}]]*/ "/admin/skills/import/preview",
               {
                 method: "POST",
                 body: formData,
