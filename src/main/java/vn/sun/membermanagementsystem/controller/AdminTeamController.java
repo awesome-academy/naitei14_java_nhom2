@@ -1,15 +1,20 @@
 package vn.sun.membermanagementsystem.controller;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +31,7 @@ import vn.sun.membermanagementsystem.exception.ResourceNotFoundException;
 import vn.sun.membermanagementsystem.services.TeamMemberService;
 import vn.sun.membermanagementsystem.services.TeamService;
 import vn.sun.membermanagementsystem.services.UserService;
+import vn.sun.membermanagementsystem.services.csv.impls.TeamCsvExportService;
 
 @Controller
 @RequiredArgsConstructor
@@ -35,6 +41,7 @@ public class AdminTeamController {
     private final TeamService teamService;
     private final UserService userService;
     private final TeamMemberService teamMemberService;
+    private final TeamCsvExportService teamCsvExportService;
 
     @GetMapping
     public String teamList(
@@ -321,5 +328,16 @@ public class AdminTeamController {
             response.put("message", "An error occurred: " + e.getMessage());
             return response;
         }
+    }
+
+    @GetMapping("/export")
+    public void exportTeams(HttpServletResponse response) throws IOException {
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String filename = "teams_export_" + timestamp + ".csv";
+
+        response.setContentType("text/csv; charset=UTF-8");
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"");
+
+        teamCsvExportService.exportToCsv(response.getOutputStream());
     }
 }
