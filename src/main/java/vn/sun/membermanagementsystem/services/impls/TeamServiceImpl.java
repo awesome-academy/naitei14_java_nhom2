@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.sun.membermanagementsystem.annotation.LogActivity;
 import vn.sun.membermanagementsystem.dto.request.CreateTeamRequest;
 import vn.sun.membermanagementsystem.dto.request.UpdateTeamRequest;
 import vn.sun.membermanagementsystem.dto.response.TeamDTO;
@@ -78,6 +79,7 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Transactional
+    @LogActivity(action = "CREATE_TEAM", entityType = "TEAM", description = "Create new team")
     public TeamDTO createTeam(CreateTeamRequest request) {
         log.info("Creating team with name: {}", request.getName());
 
@@ -104,6 +106,7 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Transactional
+    @LogActivity(action = "UPDATE_TEAM", entityType = "TEAM", description = "Update team information")
     public TeamDTO updateTeam(Long id, UpdateTeamRequest request) {
         log.info("Updating team with ID: {}", id);
         log.info("Request data - Name: {}, Description length: {}, LeaderId: {}",
@@ -142,6 +145,7 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Transactional
+    @LogActivity(action = "DELETE_TEAM", entityType = "TEAM", description = "Delete team")
     public boolean deleteTeam(Long id) {
         log.info("Soft deleting team with ID: {}", id);
 
@@ -321,6 +325,7 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @LogActivity(action = "ADD_MEMBER_TO_TEAM", entityType = "TEAM", description = "Add member to team")
     public void addMemberToTeam(Long teamId, Long userId) {
         log.info("Adding user {} to team {}", userId, teamId);
 
@@ -360,6 +365,7 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @LogActivity(action = "ADD_MEMBERS_TO_TEAM", entityType = "TEAM", description = "Add multiple members to team")
     public int addMembersToTeam(Long teamId, List<Long> userIds) {
         log.info("Adding {} users to team {}", userIds.size(), teamId);
 
@@ -416,6 +422,7 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @LogActivity(action = "REMOVE_MEMBER_FROM_TEAM", entityType = "TEAM", description = "Remove member from team")
     public void removeMemberFromTeam(Long teamId, Long userId) {
         log.info("Removing user {} from team {}", userId, teamId);
 

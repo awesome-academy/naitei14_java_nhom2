@@ -3,6 +3,7 @@ package vn.sun.membermanagementsystem.controller;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,13 +19,19 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import vn.sun.membermanagementsystem.dto.request.CreateTeamRequest;
 import vn.sun.membermanagementsystem.dto.request.UpdateTeamRequest;
+import vn.sun.membermanagementsystem.dto.request.csv.CsvImportResult;
+import vn.sun.membermanagementsystem.dto.request.csv.CsvPreviewResult;
 import vn.sun.membermanagementsystem.dto.response.TeamDTO;
 import vn.sun.membermanagementsystem.dto.response.TeamDetailDTO;
 import vn.sun.membermanagementsystem.dto.response.TeamStatisticsDTO;
+import vn.sun.membermanagementsystem.entities.Team;
 import vn.sun.membermanagementsystem.exception.BadRequestException;
 import vn.sun.membermanagementsystem.exception.DuplicateResourceException;
 import vn.sun.membermanagementsystem.exception.ResourceNotFoundException;
@@ -32,7 +39,9 @@ import vn.sun.membermanagementsystem.services.TeamMemberService;
 import vn.sun.membermanagementsystem.services.TeamService;
 import vn.sun.membermanagementsystem.services.UserService;
 import vn.sun.membermanagementsystem.services.csv.impls.TeamCsvExportService;
+import vn.sun.membermanagementsystem.services.csv.impls.TeamCsvImportService;
 
+@Slf4j
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/admin/teams")
@@ -42,6 +51,7 @@ public class AdminTeamController {
     private final UserService userService;
     private final TeamMemberService teamMemberService;
     private final TeamCsvExportService teamCsvExportService;
+    private final TeamCsvImportService teamCsvImportService;
 
     @GetMapping
     public String teamList(
@@ -339,5 +349,81 @@ public class AdminTeamController {
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"");
 
         teamCsvExportService.exportToCsv(response.getOutputStream());
+    }
+
+    @GetMapping("/import/template")
+    public ResponseEntity<byte[]> downloadTemplate() {
+        log.info("Downloading team import template");
+
+        String csvContent = teamCsvImportService.generateSampleCsv();
+        byte[] csvBytes = csvContent.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+        // Add BOM for Excel UTF-8 support
+        byte[] bom = { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF };
+        byte[] result = new byte[bom.length + csvBytes.length];
+        System.arraycopy(bom, 0, result, 0, bom.length);
+        System.arraycopy(csvBytes, 0, result, bom.length, csvBytes.length);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"teams_import_template.csv\"")
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .body(result);
+    }
+
+    @GetMapping("/import")
+    public String showImportPage(Model model) {
+        model.addAttribute("entityType", "Team");
+        return "admin/teams/import";
+    }
+
+    @PostMapping("/import/preview")
+    @ResponseBody
+    public CsvPreviewResult previewImport(@RequestParam("file") MultipartFile file) {
+        log.info("Previewing CSV import for teams, file: {}", file.getOriginalFilename());
+        CsvPreviewResult result = teamCsvImportService.previewCsv(file);
+        log.info("Preview result - totalRows: {}, validRows: {}, invalidRows: {}, hasErrors: {}, fileError: {}",
+                result.getTotalRows(), result.getValidRows(), result.getInvalidRows(),
+                result.isHasErrors(), result.getFileError());
+        if (result.getHeaders() != null) {
+            log.info("Headers: {}", String.join(", ", result.getHeaders()));
+        }
+        if (result.getRows() != null) {
+            log.info("Rows count: {}", result.getRows().size());
+        }
+        return result;
+    }
+
+    @PostMapping("/import")
+    public String importTeams(@RequestParam("file") MultipartFile file,
+            RedirectAttributes redirectAttributes) {
+        log.info("Importing teams from CSV file: {}", file.getOriginalFilename());
+
+        CsvImportResult<Team> result = teamCsvImportService.importFromCsv(file);
+
+        if (result.hasErrors()) {
+            redirectAttributes.addFlashAttribute("importErrors", result.getErrors());
+            redirectAttributes.addFlashAttribute("errorCount", result.getErrorCount());
+
+            if (result.isRolledBack()) {
+                redirectAttributes.addFlashAttribute("rolledBack", true);
+                redirectAttributes.addFlashAttribute("errorMessage",
+                        String.format(
+                                "Import failed. %d error(s) found. No teams were imported. Please fix the errors and try again.",
+                                result.getErrorCount()));
+            }
+        }
+
+        if (!result.isRolledBack()) {
+            redirectAttributes.addFlashAttribute("successCount", result.getSuccessCount());
+            redirectAttributes.addFlashAttribute("totalRows", result.getTotalRows());
+
+            if (result.getSuccessCount() > 0) {
+                redirectAttributes.addFlashAttribute("successMessage",
+                        String.format("Successfully imported %d team(s)",
+                                result.getSuccessCount()));
+            }
+        }
+
+        return "redirect:/admin/teams/import";
     }
 }
