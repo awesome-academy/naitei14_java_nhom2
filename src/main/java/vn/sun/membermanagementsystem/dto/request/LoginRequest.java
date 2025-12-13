@@ -1,25 +1,24 @@
 package vn.sun.membermanagementsystem.dto.request;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * DTO nhận request từ client khi login
- * Dùng cho: POST /api/v1/auth/login
- * Body: {"email": "user@example.com", "password": "password123"}
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(description = "Request đăng nhập")
 public class LoginRequest {
     
     @NotBlank(message = "Email is required")
-    @Email(message = "Email should be valid")
+    @Email(message = "Email must be valid")
+    @Schema(description = "Email đăng nhập", example = "user@example.com", required = true)
     private String email;
     
     @NotBlank(message = "Password is required")
+    @Schema(description = "Mật khẩu", example = "password123", required = true, format = "password")
     private String password;
 }

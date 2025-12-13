@@ -12,6 +12,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import vn.sun.membermanagementsystem.config.jwt.JwtUtils;
 import vn.sun.membermanagementsystem.config.services.CustomUserDetailsService;
 import vn.sun.membermanagementsystem.dto.request.LoginRequest;
@@ -19,13 +28,14 @@ import vn.sun.membermanagementsystem.dto.request.RegisterRequest;
 import vn.sun.membermanagementsystem.dto.response.LoginResponse;
 import vn.sun.membermanagementsystem.dto.response.MessageResponse;
 import vn.sun.membermanagementsystem.dto.response.UserListItemDTO;
+import vn.sun.membermanagementsystem.dto.response.UserProfileDetailDTO;
 import vn.sun.membermanagementsystem.entities.User;
 import vn.sun.membermanagementsystem.enums.UserRole;
 import vn.sun.membermanagementsystem.enums.UserStatus;
 import vn.sun.membermanagementsystem.repositories.UserRepository;
+import vn.sun.membermanagementsystem.services.UserService;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * Controller xử lý authentication cho API (Client/Mobile)
@@ -39,6 +49,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
+@Tag(name = " User Authentication", description = "APIs xác thực người dùng - Đăng nhập, đăng ký, quản lý profile")
 @CrossOrigin(origins = "*", maxAge = 3600)
 public class AuthUserController {
     
@@ -47,6 +58,7 @@ public class AuthUserController {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final CustomUserDetailsService userDetailsService;
+    private final UserService userService;
     
     /**
      * API Login - Trả về JWT token
@@ -54,8 +66,82 @@ public class AuthUserController {
      * Body: {"email": "user@example.com", "password": "password123"}
      * Response: {"token": "eyJ...", "type": "Bearer", "email": "...", "role": "USER", "userId": 1}
      */
+    @Operation(
+        summary = "Đăng nhập",
+        description = "Xác thực người dùng bằng email và mật khẩu, trả về JWT token để sử dụng cho các API khác"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Đăng nhập thành công",
+            content = @Content(
+                schema = @Schema(implementation = LoginResponse.class),
+                examples = @ExampleObject(
+                    name = "Success Response",
+                    value = """
+                        {
+                          "token": "eyJhbGc",
+                          "type": "Bearer",
+                          "email": "user@example.com",
+                          "role": "MEMBER",
+                          "userId": 1
+                        }
+                        """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "401", 
+            description = "Email hoặc mật khẩu không đúng",
+            content = @Content(
+                schema = @Schema(implementation = MessageResponse.class),
+                examples = @ExampleObject(
+                    name = "Invalid Credentials",
+                    value = """
+                        {
+                          "message": "Invalid email or password",
+                          "success": false
+                        }
+                        """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "500", 
+            description = "Lỗi server",
+            content = @Content(
+                schema = @Schema(implementation = MessageResponse.class),
+                examples = @ExampleObject(
+                    name = "Server Error",
+                    value = """
+                        {
+                          "message": "An error occurred during login: Database connection failed",
+                          "success": false
+                        }
+                        """
+                )
+            )
+        )
+    })
     @PostMapping("/login")
-    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> authenticateUser(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                description = "Thông tin đăng nhập (email và password)",
+                required = true,
+                content = @Content(
+                    schema = @Schema(implementation = LoginRequest.class),
+                    examples = @ExampleObject(
+                        name = "Login Example",
+                        value = """
+                            {
+                              "email": "user@example.com",
+                              "password": "password123"
+                            }
+                            """
+                    )
+                )
+            )
+            @Valid @RequestBody LoginRequest loginRequest) {
         try {
             // 1. Xác thực email/password bằng AuthenticationManager
             Authentication authentication = authenticationManager.authenticate(
@@ -102,8 +188,92 @@ public class AuthUserController {
      * Body: {"name": "John", "email": "john@example.com", "password": "password123"}
      * Response: {"message": "User registered successfully", "success": true}
      */
+    @Operation(
+        summary = "Đăng ký tài khoản mới",
+        description = "Tạo tài khoản người dùng mới với vai trò MEMBER. Email phải duy nhất."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "201", 
+            description = "Đăng ký thành công",
+            content = @Content(
+                schema = @Schema(implementation = MessageResponse.class),
+                examples = @ExampleObject(
+                    name = "Success Response",
+                    value = """
+                        {
+                          "message": "User registered successfully",
+                          "success": true
+                        }
+                        """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400", 
+            description = "Email đã được sử dụng hoặc dữ liệu không hợp lệ",
+            content = @Content(
+                schema = @Schema(implementation = MessageResponse.class),
+                examples = {
+                    @ExampleObject(
+                        name = "Email Already Exists",
+                        value = """
+                            {
+                              "message": "Email is already in use",
+                              "success": false
+                            }
+                            """
+                    ),
+                    @ExampleObject(
+                        name = "Validation Error",
+                        value = """
+                            {
+                              "message": "Password must be at least 6 characters",
+                              "success": false
+                            }
+                            """
+                    )
+                }
+            )
+        ),
+        @ApiResponse(
+            responseCode = "500", 
+            description = "Lỗi server",
+            content = @Content(
+                schema = @Schema(implementation = MessageResponse.class),
+                examples = @ExampleObject(
+                    name = "Server Error",
+                    value = """
+                        {
+                          "message": "An error occurred during registration: Internal server error",
+                          "success": false
+                        }
+                        """
+                )
+            )
+        )
+    })
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest registerRequest) {
+    public ResponseEntity<?> registerUser(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                description = "Thông tin đăng ký (name, email, password, birthday)",
+                required = true,
+                content = @Content(
+                    schema = @Schema(implementation = RegisterRequest.class),
+                    examples = @ExampleObject(
+                        name = "Register Example",
+                        value = """
+                            {
+                              "name": "User",
+                              "email": "user@example.com",
+                              "password": "password123",
+                              "birthday": "1990-01-15"
+                            }
+                            """
+                    )
+                )
+            )
+            @Valid @RequestBody RegisterRequest registerRequest) {
         try {
             // 1. Kiểm tra email đã tồn tại chưa
             if (userRepository.existsByEmailAndNotDeleted(registerRequest.getEmail())) {
@@ -117,8 +287,9 @@ public class AuthUserController {
                 .name(registerRequest.getName())
                 .email(registerRequest.getEmail())
                 .passwordHash(passwordEncoder.encode(registerRequest.getPassword()))
-                .role(UserRole.MEMBER) // Default role
-                .status(UserStatus.ACTIVE) // Default status
+                .birthday(registerRequest.getBirthday())
+                .role(UserRole.MEMBER)
+                .status(UserStatus.ACTIVE)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
@@ -189,11 +360,115 @@ public class AuthUserController {
     */
     
     /**
-     * API Get current user profile
+     * API Get current user profile with full details
      * GET /api/v1/auth/profile
      * Header: Authorization: Bearer <token>
-     * Response: User object
+     * Response: Complete user profile including:
+     * - Basic information (name, email, birthday, role, status, timestamps)
+     * - Current position
+     * - Active team
+     * - Active projects
+     * - Skills
      */
+    @Operation(
+        summary = "Lấy thông tin profile hiện tại",
+        description = "Trả về thông tin chi tiết đầy đủ của người dùng đang đăng nhập bao gồm: thông tin cơ bản, vị trí, team, dự án và kỹ năng"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Lấy thông tin thành công",
+            content = @Content(
+                schema = @Schema(implementation = UserProfileDetailDTO.class),
+                examples = @ExampleObject(
+                    name = "Success Response",
+                    value = """
+                        {
+                          "id": 1,
+                          "name": "User",
+                          "email": "user@example.com",
+                          "birthday": "1990-01-15",
+                          "role": "MEMBER",
+                          "status": "ACTIVE",
+                          "createdAt": "2024-01-01T10:00:00",
+                          "updatedAt": "2024-12-13T15:30:00",
+                          "activeTeam": "Team Alpha",
+                          "currentPosition": {
+                            "id": 1,
+                            "name": "Backend Developer",
+                            "abbreviation": "BE"
+                          },
+                          "activeProjects": [
+                            {
+                              "id": 1,
+                              "name": "Project X",
+                              "abbreviation": "PX",
+                              "status": "ACTIVE"
+                            }
+                          ],
+                          "skills": [
+                            {
+                              "skillId": 1,
+                              "skillName": "Java",
+                              "level": "ADVANCED",
+                              "usedYearNumber": 3.5
+                            }
+                          ]
+                        }
+                        """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "401", 
+            description = "Chưa đăng nhập hoặc token không hợp lệ",
+            content = @Content(
+                schema = @Schema(implementation = MessageResponse.class),
+                examples = @ExampleObject(
+                    name = "Unauthorized",
+                    value = """
+                        {
+                          "message": "Unauthorized",
+                          "success": false
+                        }
+                        """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404", 
+            description = "Không tìm thấy thông tin người dùng",
+            content = @Content(
+                schema = @Schema(implementation = MessageResponse.class),
+                examples = @ExampleObject(
+                    name = "Not Found",
+                    value = """
+                        {
+                          "message": "User not found",
+                          "success": false
+                        }
+                        """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "500", 
+            description = "Lỗi server",
+            content = @Content(
+                schema = @Schema(implementation = MessageResponse.class),
+                examples = @ExampleObject(
+                    name = "Server Error",
+                    value = """
+                        {
+                          "message": "Error fetching user profile: Internal server error",
+                          "success": false
+                        }
+                        """
+                )
+            )
+        )
+    })
+    @SecurityRequirement(name = "Bearer Authentication")
     @GetMapping("/profile")
     public ResponseEntity<?> getUserProfile(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -206,17 +481,14 @@ public class AuthUserController {
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
             User user = userDetailsService.getUserByEmail(userDetails.getUsername());
             
-            // ⭐ Map sang DTO không có passwordHash
-            UserListItemDTO profile = UserListItemDTO.builder()
-                .id(user.getId())
-                .name(user.getName())
-                .email(user.getEmail())
-                .birthday(user.getBirthday())
-                .role(user.getRole())
-                .status(user.getStatus())
-                .build();
+            // Sử dụng UserService để lấy thông tin chi tiết đầy đủ
+            UserProfileDetailDTO profile = userService.getUserDetailById(user.getId());
             
             return ResponseEntity.ok(profile);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new MessageResponse("User not found", false));
         } catch (Exception e) {
             return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -230,6 +502,28 @@ public class AuthUserController {
      * Note: Với JWT, logout thường xử lý ở client (xóa token)
      * Server side chỉ clear SecurityContext
      */
+    @Operation(
+        summary = "Đăng xuất",
+        description = "Xóa authentication context. Client nên xóa JWT token sau khi gọi API này."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Đăng xuất thành công",
+            content = @Content(
+                schema = @Schema(implementation = MessageResponse.class),
+                examples = @ExampleObject(
+                    name = "Success Response",
+                    value = """
+                        {
+                          "message": "Logged out successfully",
+                          "success": true
+                        }
+                        """
+                )
+            )
+        )
+    })
     @PostMapping("/logout")
     public ResponseEntity<?> logoutUser() {
         SecurityContextHolder.clearContext();

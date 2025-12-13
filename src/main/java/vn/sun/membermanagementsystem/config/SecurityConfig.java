@@ -52,7 +52,7 @@ public class SecurityConfig {
     @Order(1)
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-            .securityMatcher("/api/**","/swagger-ui/**", "/v3/api-docs/**")
+            .securityMatcher("/api/**")
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
@@ -60,7 +60,6 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/public/**").permitAll()
                 .requestMatchers("/api/v1/teams/**", "/api/v1/members/**").hasRole("USER")
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())
@@ -69,9 +68,23 @@ public class SecurityConfig {
         return http.build();
     }
     
-    // Admin Web Security (Session-based - Stateful)
+    // Swagger UI Security (Public Access)
     @Bean
     @Order(2)
+    public SecurityFilterChain swaggerSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .securityMatcher("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/api-docs/**")
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                .anyRequest().permitAll()
+            );
+        
+        return http.build();
+    }
+    
+    // Admin Web Security (Session-based - Stateful)
+    @Bean
+    @Order(3)
     public SecurityFilterChain adminSecurityFilterChain(HttpSecurity http) throws Exception {
         http
             .securityMatcher("/admin/**")
@@ -107,7 +120,7 @@ public class SecurityConfig {
     
     // Public Resources
     @Bean
-    @Order(3)
+    @Order(4)
     public SecurityFilterChain publicSecurityFilterChain(HttpSecurity http) throws Exception {
         http
             .securityMatcher("/**")

@@ -14,5 +14,19 @@ default:
 jwt:
   secret: YourVerySecureSecretKeyForJWTTokenGenerationMustBeLongEnoughAtLeast256BitsForHS256Algorithm
   expiration: 86400000
-
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    try-it-out-enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+    filter: true
+  
+  # Package name 
+  packages-to-scan: vn.sun.membermanagementsystem.controller
+  # Disable endpoint cho admin 
+  paths-to-exclude: /admin/**
 
