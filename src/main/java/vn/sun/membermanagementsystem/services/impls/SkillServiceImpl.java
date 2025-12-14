@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.sun.membermanagementsystem.annotation.LogActivity;
 import vn.sun.membermanagementsystem.dto.request.CreateSkillRequest;
 import vn.sun.membermanagementsystem.dto.request.UpdateSkillRequest;
 import vn.sun.membermanagementsystem.dto.response.SkillDTO;
@@ -56,6 +57,7 @@ public class SkillServiceImpl implements SkillService {
 
     @Override
     @Transactional
+    @LogActivity(action = "CREATE_SKILL", entityType = "SKILL", description = "Create new skill")
     public SkillDTO createSkill(CreateSkillRequest request) {
         // Validate unique name (case-insensitive)
         if (skillRepository.existsByNameIgnoreCaseAndNotDeleted(request.getName())) {
@@ -69,6 +71,7 @@ public class SkillServiceImpl implements SkillService {
     
     @Override
     @Transactional
+    @LogActivity(action = "UPDATE_SKILL", entityType = "SKILL", description = "Update skill information")
     public SkillDTO updateSkill(Long id, UpdateSkillRequest request) {
         Skill skill = skillRepository.findByIdAndNotDeleted(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Skill not found with id: " + id));
@@ -85,6 +88,7 @@ public class SkillServiceImpl implements SkillService {
     
     @Override
     @Transactional
+    @LogActivity(action = "DELETE_SKILL", entityType = "SKILL", description = "Delete skill")
     public void deleteSkill(Long id) {
         Skill skill = skillRepository.findByIdAndNotDeleted(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Skill not found with id: " + id));
