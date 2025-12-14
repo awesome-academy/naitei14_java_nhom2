@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.sun.membermanagementsystem.annotation.LogActivity;
 import vn.sun.membermanagementsystem.dto.request.CreatePositionRequest;
 import vn.sun.membermanagementsystem.dto.request.UpdatePositionRequest;
 import vn.sun.membermanagementsystem.dto.response.PositionDTO;
@@ -44,6 +45,7 @@ public class PositionServiceImpl implements PositionService {
     
     @Override
     @Transactional
+    @LogActivity(action = "CREATE_POSITION", entityType = "POSITION", description = "Create new position")
     public PositionDTO createPosition(CreatePositionRequest request) {
         log.info("Creating position with name: {}", request.getName());
         
@@ -58,6 +60,7 @@ public class PositionServiceImpl implements PositionService {
     
     @Override
     @Transactional
+    @LogActivity(action = "UPDATE_POSITION", entityType = "POSITION", description = "Update position information")
     public PositionDTO updatePosition(Long id, UpdatePositionRequest request) {
         log.info("Updating position with id: {}", id);
         
@@ -75,6 +78,7 @@ public class PositionServiceImpl implements PositionService {
     
     @Override
     @Transactional
+    @LogActivity(action = "DELETE_POSITION", entityType = "POSITION", description = "Delete position")
     public void deletePosition(Long id) {
         log.info("Deleting position with id: {}", id);
         
