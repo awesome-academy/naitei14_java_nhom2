@@ -251,12 +251,13 @@ public class UserServiceImpl implements UserService {
     public UserProfileDetailDTO getUserDetailById(Long userId) {
         log.info("Getting user detail with ID: {}", userId);
 
-        User user = userRepository.findByIdWithTeams(userId)
+        User user = userRepository.findByIdAndNotDeleted(userId)
                 .orElseThrow(() -> {
                     log.error("User not found with ID: {}", userId);
                     return new ResourceNotFoundException("User not found with ID: " + userId);
                 });
 
+        userRepository.findByIdWithTeams(userId);
         userRepository.findByIdWithProjects(userId);
         userRepository.findByIdWithPositionHistories(userId);
         userRepository.findByIdWithSkills(userId);
@@ -269,12 +270,13 @@ public class UserServiceImpl implements UserService {
     public UserUpdateDTO getUserFormById(Long userId) {
         log.info("Getting user form data with ID: {}", userId);
 
-        User user = userRepository.findByIdWithTeams(userId)
+        User user = userRepository.findByIdAndNotDeleted(userId)
                 .orElseThrow(() -> {
                     log.error("User not found with ID: {}", userId);
                     return new ResourceNotFoundException("User not found with ID: " + userId);
                 });
 
+        userRepository.findByIdWithTeams(userId);
         userRepository.findByIdWithPositionHistories(userId);
         userRepository.findByIdWithSkills(userId);
 

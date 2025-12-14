@@ -16,12 +16,12 @@ import vn.sun.membermanagementsystem.dto.request.CreateProjectRequest;
 import vn.sun.membermanagementsystem.dto.request.UpdateProjectRequest;
 import vn.sun.membermanagementsystem.dto.response.*;
 import vn.sun.membermanagementsystem.enums.UserStatus;
+import vn.sun.membermanagementsystem.services.ProjectMemberService;
 import vn.sun.membermanagementsystem.services.ProjectService;
 import vn.sun.membermanagementsystem.services.TeamService;
 import vn.sun.membermanagementsystem.services.UserService;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/admin/projects")
@@ -31,8 +31,24 @@ public class AdminProjectController {
     private final ProjectService projectService;
     private final TeamService teamService;
     private final UserService userService;
+    private final ProjectMemberService projectMemberService;
 
     private static final List<Integer> PAGE_SIZES = List.of(10, 25, 50, 100);
+
+    @ModelAttribute("teams")
+    public List<TeamDTO> populateTeams() {
+        return teamService.getAllTeams();
+    }
+
+    @ModelAttribute("allUsers")
+    public List<UserListItemDTO> populateActiveUsers() {
+        return userService.getUsersByStatus(UserStatus.ACTIVE);
+    }
+
+    @ModelAttribute("pageSizeOptions")
+    public List<Integer> populatePageSizeOptions() {
+        return PAGE_SIZES;
+    }
 
     @GetMapping
     public String listProjects(
@@ -41,27 +57,44 @@ public class AdminProjectController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Long teamId
     ) {
-        if (!PAGE_SIZES.contains(size)) {
-            size = 10;
-        }
+        if (!PAGE_SIZES.contains(size)) size = 10;
 
         PageRequest pageable = PageRequest.of(page, size, Sort.by("id").ascending());
-
         Page<ProjectDTO> projectsPage = projectService.getAllProjects(teamId, pageable);
 
         model.addAttribute("projects", projectsPage);
-        model.addAttribute("teams", teamService.getAllTeams());
         model.addAttribute("selectedTeamId", teamId);
         model.addAttribute("currentPageSize", size);
-        model.addAttribute("pageSizeOptions", PAGE_SIZES);
 
         return "admin/projects/index";
     }
 
     @GetMapping("/{id}")
-    public String viewProjectDetail(@PathVariable Long id, Model model) {
+    public String viewProjectDetail(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "joinedAt") String sortField,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            Model model
+    ) {
+        if (!PAGE_SIZES.contains(size)) size = 10;
+
         ProjectDetailDTO project = projectService.getProjectDetail(id);
         model.addAttribute("project", project);
+
+        Sort.Direction direction = sortDir.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
+
+        Page<ProjectMemberDTO> memberPage = projectMemberService.getProjectMembers(id, pageable);
+
+        model.addAttribute("memberPage", memberPage);
+        model.addAttribute("currentPageSize", size);
+
+        model.addAttribute("sortField", sortField);
+        model.addAttribute("sortDir", sortDir);
+        model.addAttribute("reverseSortDir", sortDir.equals("asc") ? "desc" : "asc"); // Để đảo chiều khi click
+
         return "admin/projects/detail";
     }
 
@@ -70,9 +103,6 @@ public class AdminProjectController {
         if (!model.containsAttribute("projectRequest")) {
             model.addAttribute("projectRequest", new CreateProjectRequest());
         }
-        model.addAttribute("teams", teamService.getAllTeams());
-        List<UserListItemDTO> activeUsers = userService.getUsersByStatus(UserStatus.ACTIVE);
-        model.addAttribute("allUsers", activeUsers);
         return "admin/projects/create";
     }
 
@@ -84,31 +114,18 @@ public class AdminProjectController {
             RedirectAttributes redirectAttributes
     ) {
         if (result.hasErrors()) {
-            model.addAttribute("teams", teamService.getAllTeams());
-            if (request.getTeamId() != null) {
-                model.addAttribute("teams", teamService.getAllTeams());
-                model.addAttribute("allUsers", userService.getUsersByStatus(UserStatus.ACTIVE));
-            }
             return "admin/projects/create";
         }
 
         try {
             ProjectDTO newProject = projectService.createProject(request);
-            redirectAttributes.addFlashAttribute("successMessage", "Project '" + newProject.getName() + "' created successfully!");
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Project '" + newProject.getName() + "' created successfully!");
             return "redirect:/admin/projects/" + newProject.getId();
         } catch (IllegalArgumentException e) {
             result.rejectValue("teamId", "error.projectRequest", e.getMessage());
-            model.addAttribute("teams", teamService.getAllTeams());
-            model.addAttribute("allUsers", userService.getUsersByStatus(UserStatus.ACTIVE));
             return "admin/projects/create";
         }
-    }
-
-    @GetMapping("/api/teams/{teamId}/users")
-    @ResponseBody
-    public ResponseEntity<List<UserSelectionDTO>> getUsersByTeamApi(@PathVariable Long teamId) {
-        List<UserSelectionDTO> users = teamService.getActiveUsersByTeam(teamId);
-        return ResponseEntity.ok(users);
     }
 
     @GetMapping("/edit/{id}")
@@ -117,13 +134,7 @@ public class AdminProjectController {
             UpdateProjectRequest req = projectService.getUpdateProjectRequest(id);
             model.addAttribute("projectRequest", req);
         }
-
-        UpdateProjectRequest currentReq = (UpdateProjectRequest) model.getAttribute("projectRequest");
-
-        populateFormData(model, currentReq.getTeamId());
-
         model.addAttribute("projectId", id);
-
         return "admin/projects/edit";
     }
 
@@ -136,7 +147,6 @@ public class AdminProjectController {
             RedirectAttributes redirectAttributes
     ) {
         if (result.hasErrors()) {
-            populateFormData(model, request.getTeamId());
             model.addAttribute("projectId", id);
             return "admin/projects/edit";
         }
@@ -148,21 +158,16 @@ public class AdminProjectController {
             return "redirect:/admin/projects/" + updated.getId();
         } catch (IllegalArgumentException e) {
             result.reject("error.business", e.getMessage());
-            populateFormData(model, request.getTeamId());
             model.addAttribute("projectId", id);
             return "admin/projects/edit";
         }
     }
 
     @PostMapping("/delete/{id}")
-    public String deleteProject(
-            @PathVariable Long id,
-            RedirectAttributes redirectAttributes
-    ) {
+    public String deleteProject(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             projectService.cancelProject(id);
             redirectAttributes.addFlashAttribute("successMessage", "Project has been cancelled successfully.");
-
         } catch (IllegalStateException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         } catch (EntityNotFoundException e) {
@@ -170,17 +175,13 @@ public class AdminProjectController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "An error occurred while cancelling the project.");
         }
-
         return "redirect:/admin/projects";
     }
 
-    private void populateFormData(Model model, Long teamId) {
-        model.addAttribute("teams", teamService.getAllTeams());
-        if (teamId != null) {
-            model.addAttribute("preloadedUsers", teamService.getActiveUsersByTeam(teamId));
-        } else {
-            model.addAttribute("preloadedUsers", List.of());
-        }
+    @GetMapping("/api/teams/{teamId}/users")
+    @ResponseBody
+    public ResponseEntity<List<UserSelectionDTO>> getUsersByTeamApi(@PathVariable Long teamId) {
+        List<UserSelectionDTO> users = teamService.getActiveUsersByTeam(teamId);
+        return ResponseEntity.ok(users);
     }
-
 }

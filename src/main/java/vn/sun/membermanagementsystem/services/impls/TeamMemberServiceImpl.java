@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.sun.membermanagementsystem.annotation.LogActivity;
 import vn.sun.membermanagementsystem.dto.response.TeamMembershipDTO;
 import vn.sun.membermanagementsystem.entities.Team;
 import vn.sun.membermanagementsystem.entities.TeamLeadershipHistory;
@@ -35,6 +36,7 @@ public class TeamMemberServiceImpl implements TeamMemberService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @LogActivity(action = "ADD_MEMBER_TO_TEAM", entityType = "TEAM", description = "Add member to team")
     public TeamMembershipDTO addMember(Long userId, Long teamId) {
         log.info("Adding user {} to team {}", userId, teamId);
 
@@ -72,6 +74,7 @@ public class TeamMemberServiceImpl implements TeamMemberService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @LogActivity(action = "TRANSFER_MEMBER", entityType = "TEAM", description = "Transfer member to another team")
     public TeamMembershipDTO transferMember(Long userId, Long newTeamId) {
         log.info("Transferring user {} to team {}", userId, newTeamId);
 

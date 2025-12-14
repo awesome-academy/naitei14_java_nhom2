@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.sun.membermanagementsystem.annotation.LogActivity;
 import vn.sun.membermanagementsystem.dto.response.TeamDetailDTO;
 import vn.sun.membermanagementsystem.dto.response.TeamLeaderDTO;
 import vn.sun.membermanagementsystem.entities.Team;
@@ -37,6 +38,7 @@ public class TeamLeadershipServiceImpl implements TeamLeadershipService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @LogActivity(action = "ASSIGN_TEAM_LEADER", entityType = "TEAM", description = "Assign leader to team")
     public TeamLeaderDTO assignLeader(Long teamId, Long leaderId) {
         log.info("Assigning leader {} to team {}", leaderId, teamId);
 
@@ -73,6 +75,7 @@ public class TeamLeadershipServiceImpl implements TeamLeadershipService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @LogActivity(action = "CHANGE_TEAM_LEADER", entityType = "TEAM", description = "Change team leader")
     public TeamLeaderDTO changeLeader(Long teamId, Long newLeaderId) {
         log.info("Changing leader of team {} to user {}", teamId, newLeaderId);
 
@@ -119,6 +122,7 @@ public class TeamLeadershipServiceImpl implements TeamLeadershipService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @LogActivity(action = "REMOVE_TEAM_LEADER", entityType = "TEAM", description = "Remove team leader")
     public void removeLeader(Long teamId) {
         log.info("Removing leader from team {}", teamId);
 
